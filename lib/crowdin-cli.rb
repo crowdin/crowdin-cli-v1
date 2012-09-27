@@ -4,3 +4,7 @@ require 'crowdin-cli/version.rb'
 # you just need to require this one file in your bin file
 
 require 'yaml'
+require 'json'
+require 'gli'
+require 'zip/zip'
+require 'crowdin-api'

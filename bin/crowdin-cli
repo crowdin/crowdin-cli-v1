@@ -1,13 +1,10 @@
 #!/usr/bin/env ruby
 
 require 'pp'
-require 'json'
-require 'gli'
-require 'zip/zip'
-require 'crowdin-api'
 require 'crowdin-cli'
 
-# using to return directory structure in Crowdin project
+# using for upload source files
+# return existing directory structure in Crowdin project
 #
 def walk_remote_tree(files, root = '/', result = { dirs: [], files: [] })
   files.each do |node|
@@ -23,19 +20,18 @@ def walk_remote_tree(files, root = '/', result = { dirs: [], files: [] })
   return result
 end
 
-
-# using to return local directory structute
+# using for upload source files
+# return local directory structute
 # first argument: ['/path/to/admin/en.xml', '/path/to/user/settings/strings.xml']
-# Result is Hash: { dirs:[], files: [] }
 #
 def walk_local_tree(files, result = { dirs: [], files: [] })
   result[:files] = files
 
-  files = files.inject([]){ |res, a|
-    res << a.split('/').drop(1).inject([]){ |res, s|
+  files = files.inject([]) do |res, a|
+    res << a.split('/').drop(1).inject([]) do |res, s|
       res << res.last.to_s + '/' + s
-    }
-  }
+    end
+  end
   # Ex: files = [["/path", "/path/to", "/path/to/admin", "/path/to/admin/en.xml"], ... ]
 
   files.map(&:pop) # delete last element from each array
@@ -68,7 +64,6 @@ def android_locale_code(locale_code)
   return locale_code.sub('-', '-r')
 end
 
-
 ###
 include GLI::App
 
@@ -83,7 +78,6 @@ desc 'Path to config file'
 default_value File.join(Dir.pwd, 'crowdin.yaml')
 arg_name '<s>'
 flag [:c, :config]
-
 
 desc 'Upload existing translations to Crowdin project'
 #arg_name 'Describe arguments to upload here'
@@ -120,6 +114,7 @@ command :upload do |c|
         if File.exist?(local_file)
           local_files << { dest: file['source'], source: local_file, export_pattern: file['translation'] }
         else
+          # then it probably is a pattern
           Dir.glob(local_file).each do |f|
             local_files << { dest: f.sub("#{@local_path}#{@sources_root}", ''), source: f, export_pattern: file['translation'] }
           end
@@ -128,7 +123,6 @@ command :upload do |c|
 
       local_project_tree = walk_local_tree(local_files.collect{ |h| h[:dest] })
 
-#=begin
       # Create directory tree
       #
       create_dirs = local_project_tree[:dirs] - remote_project_tree[:dirs]
@@ -156,11 +150,9 @@ command :upload do |c|
         puts "Add new file `#{file[:dest]}`"
         @crowdin.add_file([] << file)
       end
-#=end
 
     end # action
   end # command
-
 
   c.desc 'Upload translation files'
   c.command :translations do |c|
@@ -235,9 +227,7 @@ command :upload do |c|
             })
             translated_files[lang['crowdin_code']] << { source: @local_path + file, dest: source }
           end
-
         end
-
       end
 
       params = {}
@@ -260,7 +250,6 @@ command :upload do |c|
   end # command
 
 end
-
 
 desc 'Download existing translations'
 #arg_name 'Describe arguments to download here'
@@ -308,6 +297,7 @@ pre do |global ,command, options, args|
     @local_path = Dir.pwd
   end
 
+  # string.insert(0, '/')
   @sources_root = @config['sources_root']
 
   @crowdin = Crowdin::API.new(api_key: @config['api_key'], project_id: @config['project_id'], base_url: @config['base_url'])
