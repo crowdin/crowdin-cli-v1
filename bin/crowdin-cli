@@ -1,0 +1,332 @@
+#!/usr/bin/env ruby
+
+require 'pp'
+require 'json'
+require 'gli'
+require 'zip/zip'
+require 'crowdin-api'
+require 'crowdin-cli'
+
+# using to return directory structure in Crowdin project
+#
+def walk_remote_tree(files, root = '/', result = { dirs: [], files: [] })
+  files.each do |node|
+    case node['node_type']
+    when 'directory'
+      result[:dirs] << "#{root}#{node['name']}"
+      walk_remote_tree(node['files'], root + node['name'] + '/', result)
+    when 'file'
+      result[:files] << "#{root}#{node['name']}"
+    end
+  end
+
+  return result
+end
+
+
+# using to return local directory structute
+# first argument: ['/path/to/admin/en.xml', '/path/to/user/settings/strings.xml']
+# Result is Hash: { dirs:[], files: [] }
+#
+def walk_local_tree(files, result = { dirs: [], files: [] })
+  result[:files] = files
+
+  files = files.inject([]){ |res, a|
+    res << a.split('/').drop(1).inject([]){ |res, s|
+      res << res.last.to_s + '/' + s
+    }
+  }
+  # Ex: files = [["/path", "/path/to", "/path/to/admin", "/path/to/admin/en.xml"], ... ]
+
+  files.map(&:pop) # delete last element from each array
+  result[:dirs] = files.flatten.uniq
+
+  return result
+end
+
+def unzip_file(file, dest)
+  # overwrite files if they already exist inside of the extracted path
+  Zip.options[:on_exists_proc] = true
+
+  Zip::ZipFile.open(file) do |zip_file|
+    zip_file.each do |f|
+      f_path = File.join(dest, f.name)
+      FileUtils.mkdir_p(File.dirname(f_path))
+      puts "Download: #{f}"
+      zip_file.extract(f, f_path)
+    end
+  end
+end
+
+def android_locale_code(locale_code)
+  locale_code = case locale_code
+    when 'he-IL' then 'iw-IL'
+    when 'yi-DE' then 'ji-DE'
+    when 'id-ID' then 'in-ID'
+    else locale_code
+  end
+  return locale_code.sub('-', '-r')
+end
+
+
+###
+include GLI::App
+
+program_desc 'A CLI to sync locale files with crowdin.net'
+
+version Crowdin::CLI::VERSION
+
+desc 'Be verbose'
+switch [:v, :verbose]
+
+desc 'Path to config file'
+default_value File.join(Dir.pwd, 'crowdin.yaml')
+arg_name '<s>'
+flag [:c, :config]
+
+
+desc 'Upload existing translations to Crowdin project'
+#arg_name 'Describe arguments to upload here'
+command :upload do |c|
+  # Command 'upload' requires a subcommand
+  #
+  #c.action do |global_options, options, args|
+  #  puts "upload command ran"
+  #end
+
+  #c.default_command :all
+
+  #c.desc 'Upload source and translation files'
+  #c.command :all do |c|
+  #  c.action do |global_options, options, args|
+  #    puts options
+  #    puts "`upload all` command ran"
+  #  end
+  #end
+
+  # TODO: change variables names!
+  c.desc 'Upload source files'
+  c.command :sources do |c|
+    c.action do |global_options, options, args|
+      project_info = @crowdin.project_info(:json)
+      project_info = JSON.parse(project_info)
+
+      remote_project_tree = walk_remote_tree(project_info['files'])
+
+      local_files = []
+      @config['files'].each do |file|
+        local_file = "#{@local_path}#{@sources_root}#{file['source']}"
+
+        if File.exist?(local_file)
+          local_files << { dest: file['source'], source: local_file, export_pattern: file['translation'] }
+        else
+          Dir.glob(local_file).each do |f|
+            local_files << { dest: f.sub("#{@local_path}#{@sources_root}", ''), source: f, export_pattern: file['translation'] }
+          end
+        end
+      end
+
+      local_project_tree = walk_local_tree(local_files.collect{ |h| h[:dest] })
+
+#=begin
+      # Create directory tree
+      #
+      create_dirs = local_project_tree[:dirs] - remote_project_tree[:dirs]
+      create_dirs.each do |dir|
+        puts "Create directory `#{dir}`"
+        @crowdin.add_directory(dir)
+      end
+
+      # Update existing files in Crowdin project
+      #
+      # array containing elements common to the two arrays
+      update_files = local_project_tree[:files] & remote_project_tree[:files]
+      files_for_upload = local_files.select{ |file| update_files.include?(file[:dest]) }
+      files_for_upload.map{ |file| file.keep_if{ |k, v| [:source, :dest].include?(k) } }
+      files_for_upload.each do |file|
+        puts "Update file `#{file[:dest]}`"
+        @crowdin.update_file([] << file)
+      end
+
+      # Add new files to Crowdin project
+      #
+      add_files = local_project_tree[:files] - remote_project_tree[:files]
+      files_for_add = local_files.select{ |file| add_files.include?(file[:dest]) }
+      files_for_add.each do |file|
+        puts "Add new file `#{file[:dest]}`"
+        @crowdin.add_file([] << file)
+      end
+#=end
+
+    end # action
+  end # command
+
+
+  c.desc 'Upload translation files'
+  c.command :translations do |c|
+
+    c.desc 'the language of translation you need'
+    c.default_value 'all'
+    c.arg_name 'language_code'
+    c.flag [:l, :language]
+
+    c.desc 'defines whether to add translation if there is the same translation previously added'
+    c.switch [:import_duplicates]
+
+    c.desc 'defines whether to add translation if it is equal to source string at Crowdin'
+    c.switch [:import_eq_suggestions]
+
+    c.desc 'mark uploaded translations as approved'
+    c.switch [:auto_approve_imported]
+
+
+    c.action do |global_options, options, args|
+      language = options[:language]
+
+      project_info = @crowdin.project_info(:json)
+      project_info = JSON.parse(project_info)
+
+      # Array of project languages
+      if language == 'all'
+        project_languages = project_info['languages'].collect{ |h| h['code'] }
+      else
+        project_languages = [] << language
+      end
+
+      # Crowdin supported languages list
+      supported_languages = @crowdin.supported_languages(:json)
+      supported_languages = JSON.parse(supported_languages)
+      supported_languages.select!{ |lang| project_languages.include?(lang['crowdin_code']) }
+
+      translated_files = Hash.new{ |hash, key| hash[key] = Array.new }
+
+      # TODO gotta rewrite this shit!
+      @config['files'].each do |file|
+        translation = file['translation']
+        source = file['source'] # relative path to source file in Crowdin project
+
+        sources = []
+        if File.exists?("#{@local_path}#{@sources_root}#{source}")
+          sources << source
+        else
+          Dir.glob("#{@local_path}#{@sources_root}#{source}").each do |f|
+            sources << f.sub("#{@local_path}#{@sources_root}", '')
+          end
+        end
+
+        sources.each do |source|
+          original_path      = source.split('/')[1...-1].join('/')
+          original_file_name = source.split('/').last
+          file_extension     = original_file_name.split('.').last
+          file_name          = original_file_name.split('.').shift
+
+          supported_languages.each do |lang|
+            file = translation.gsub(/%.+?%/, {
+              '%language%'               => lang['name'],
+              '%two_letter_code%'        => lang['iso_639_1'],
+              '%tree_letter_code%'       => lang['iso_639_3'],
+              '%locale%'                 => lang['locale'],
+              '%locale_with_underscore%' => lang['locale'].gsub('-', '_'),
+              '%original_file_name%'     => original_file_name,
+              '%android_code%'           => android_locale_code(lang['locale']),
+              '%original_path%'          => original_path,
+              '%file_extension%'         => file_extension,
+              '%file_name%'              => file_extension,
+            })
+            translated_files[lang['crowdin_code']] << { source: @local_path + file, dest: source }
+          end
+
+        end
+
+      end
+
+      params = {}
+      params[:import_duplicates]     = options[:import_dublicates]     ? 1 : 0
+      params[:import_eq_suggestions] = options[:import_eq_suggestions] ? 1 : 0
+      params[:auto_approve_imported] = options[:auto_approve_imported] ? 1 : 0
+
+      translated_files.each do |language, files|
+        files.each do |file|
+          if File.exist?(file[:source])
+            puts "Uploading #{file[:source]}"
+            @crowdin.upload_translation([] << file, language, params)
+          else
+            puts "Local file #{file[:source]} not exists"
+          end
+        end
+      end
+
+    end # action
+  end # command
+
+end
+
+
+desc 'Download existing translations'
+#arg_name 'Describe arguments to download here'
+command :download do |c|
+
+  c.desc 'the language of translation you need'
+  c.arg_name 'language_code'
+  c.flag :l, :language, :default_value => 'all'
+
+  c.action do |global_options ,options, args|
+    # use export API method before to download the most recent translations
+    @crowdin.export_translations
+
+    language = options[:language]
+
+    file = Tempfile.new(language)
+    begin
+      @crowdin.download_translation(language, :output => file)
+      unzip_file(file, @local_path)
+    ensure
+      file.close
+      file.unlink # delete the temp file
+    end
+  end
+
+end
+
+pre do |global ,command, options, args|
+  # Pre logic here
+  # Return true to proceed; false to abourt and not call the
+  # chosen command
+  # Use skips_pre before a command to skip this block
+  # on that command only
+
+  @config = YAML.load_file(global[:config])
+
+  #@local_path = @config['local_path'] || Dir.pwd
+  if @config['local_path']
+    if @config['local_path'].start_with?('/')
+      @local_path = @config['local_path']
+    else
+      @local_path = Dir.pwd + '/' + @config['local_path']
+    end
+  else
+    @local_path = Dir.pwd
+  end
+
+  @sources_root = @config['sources_root']
+
+  @crowdin = Crowdin::API.new(api_key: @config['api_key'], project_id: @config['project_id'], base_url: @config['base_url'])
+
+  puts "Executing #{command.name}" if global[:v]
+  true
+end
+
+post do |global, command, options, args|
+  # Post logic here
+  # Use skips_post before a command to skip this
+  # block on that command only
+  puts "Executed #{command.name}" if global[:v]
+end
+
+on_error do |exception|
+  # Error logic here
+  # return false to skip default error handling
+  true
+end
+
+exit run(ARGV)

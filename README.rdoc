@@ -1,0 +1,21 @@
+= crowdin-cli
+
+Describe your project here
+
+== Configuration
+Create a `.crowdin` YAML file in your root project directory with the following structure:
+
+```yaml
+---
+project_id: ''
+api_key: ''
+server: 'http://api.crowdin.net'
+
+files:
+  -
+    source-file-path: locale/en/LC_MESSAGES/messages.po
+    translations: locale/<two-letters-code>/LC_MESSAGES/<original-file-name>
+```
+
+:include:crowdin-cli.rdoc
+
