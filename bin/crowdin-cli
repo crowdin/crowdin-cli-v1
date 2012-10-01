@@ -102,7 +102,7 @@ command :upload do |c|
   c.desc 'Upload source files'
   c.command :sources do |c|
     c.action do |global_options, options, args|
-      project_info = @crowdin.project_info(:json)
+      project_info = @crowdin.project_info
       project_info = JSON.parse(project_info)
 
       remote_project_tree = walk_remote_tree(project_info['files'])
@@ -175,7 +175,7 @@ command :upload do |c|
     c.action do |global_options, options, args|
       language = options[:language]
 
-      project_info = @crowdin.project_info(:json)
+      project_info = @crowdin.project_info
       project_info = JSON.parse(project_info)
 
       # Array of project languages
@@ -186,7 +186,7 @@ command :upload do |c|
       end
 
       # Crowdin supported languages list
-      supported_languages = @crowdin.supported_languages(:json)
+      supported_languages = @crowdin.supported_languages
       supported_languages = JSON.parse(supported_languages)
       supported_languages.select!{ |lang| project_languages.include?(lang['crowdin_code']) }
 
