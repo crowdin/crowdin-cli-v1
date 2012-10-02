@@ -176,6 +176,8 @@ command :upload do |c|
 
       project_info = @crowdin.project_info
 
+      remote_project_tree = walk_remote_tree(project_info['files'])
+
       # Array of project languages
       if language == 'all'
         project_languages = project_info['languages'].collect{ |h| h['code'] }
@@ -202,6 +204,8 @@ command :upload do |c|
             sources << f.sub("#{@local_path}#{@sources_root}", '')
           end
         end
+
+        sources &= remote_project_tree[:files]
 
         sources.each do |source|
           original_path      = source.split('/')[1...-1].join('/')
