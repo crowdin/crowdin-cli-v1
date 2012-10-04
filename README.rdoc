@@ -1,8 +1,0 @@
-= crowdin-cli
-
-Describe your project here
-
-== Configuration
-
-:include:crowdin-cli.rdoc
-

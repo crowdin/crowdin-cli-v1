@@ -1,29 +1,32 @@
 # Ensure we require the local version and not one we might have installed already
 require File.join([File.dirname(__FILE__),'lib','crowdin-cli','version.rb'])
-spec = Gem::Specification.new do |s|
-  s.name = 'crowdin-cli'
-  s.version = Crowdin::CLI::VERSION
-  s.author = 'Anton Maminov'
-  s.email = 'anton.linux@gmail.com'
-  s.homepage = 'https://github.com/mamantoha/crowdin-cli'
-  s.platform = Gem::Platform::RUBY
-  s.summary = 'A description of your project'
-  # Add your other files here if you make them
-  s.files = %w(
+
+Gem::Specification.new do |gem|
+  gem.name = 'crowdin-cli'
+  gem.version = Crowdin::CLI::VERSION
+
+  gem.summary = 'Crowdin CLI'
+  gem.author = ['Anton Maminov']
+  gem.email = ['anton.linux@gmail.com']
+  gem.homepage = 'https://github.com/mamantoha/crowdin-cli'
+  gem.license = 'LICENSE'
+
+  gem.files = %w(
     bin/crowdin-cli
     lib/crowdin-cli/version.rb
     lib/crowdin-cli.rb
+    README.md
+    LICENSE
   )
-  s.require_paths << 'lib'
-  s.has_rdoc = true
-  s.extra_rdoc_files = ['README.rdoc','crowdin-cli.rdoc']
-  s.rdoc_options << '--title' << 'crowdin-cli' << '--main' << 'README.rdoc' << '-ri'
-  s.bindir = 'bin'
-  s.executables << 'crowdin-cli'
-  s.add_development_dependency('rake')
-  s.add_development_dependency('rdoc')
-  s.add_development_dependency('aruba')
-  s.add_runtime_dependency('gli', '2.1.0')
-  s.add_runtime_dependency('rubyzip', '0.9.9')
-  s.add_runtime_dependency('crowdin-api', '0.0.3')
+  gem.require_paths << 'lib'
+  gem.bindir = 'bin'
+  gem.executables << 'crowdin-cli'
+  gem.add_development_dependency('rake')
+  gem.add_development_dependency('rdoc')
+  gem.add_development_dependency('aruba')
+  gem.add_runtime_dependency('gli', '2.1.0')
+  gem.add_runtime_dependency('rubyzip', '0.9.9')
+  gem.add_runtime_dependency('crowdin-api', '0.0.4')
+  gem.platform = Gem::Platform::RUBY
+  gem.required_ruby_version = '>= 1.9.3'
 end

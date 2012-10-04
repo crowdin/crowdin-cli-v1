@@ -104,19 +104,46 @@ command :upload do |c|
     c.action do |global_options, options, args|
       project_info = @crowdin.project_info
 
-      remote_project_tree = walk_remote_tree(project_info['files'])
+      #source_language = project_info['info']['source_language']
+      source_language =  'en'
+
+      # Crowdin supported languages list
+      supported_languages = @crowdin.supported_languages['languages']
+      source_language = supported_languages.find{ |lang| lang['crowdin_code'] == source_language }
+
+      remote_project_tree = walk_remote_tree(project_info['info']['files']['items'])
 
       local_files = []
       @config['files'].each do |file|
-        local_file = "#{@local_path}#{@sources_root}#{file['source']}"
-
-        if File.exist?(local_file)
-          local_files << { dest: file['source'], source: local_file, export_pattern: file['translation'] }
+        if File.exist?("#{@base_path}#{file['source']}")
+          local_files << { dest: file['source'], source: "#{@base_path}#{file['source']}", export_pattern: file['translation'] }
         else
-          # then it probably is a pattern
-          Dir.glob(local_file).each do |f|
-            local_files << { dest: f.sub("#{@local_path}#{@sources_root}", ''), source: f, export_pattern: file['translation'] }
+          Dir.glob("#{@base_path}#{file['source']}").each do |source|
+            dest = source.sub("#{@base_path}", '') # relative path in Crowdin
+            original_path      = File.dirname(dest)
+            original_file_name = File.basename(dest)
+            file_extension     = File.extname(dest)
+            file_name          = File.basename(dest, file_extension)
+
+            file_pattern = file['translation'].gsub(/%.+?%/, {
+              '%language%'               => source_language['name'],
+              '%two_letter_code%'        => source_language['iso_639_1'],
+              '%tree_letter_code%'       => source_language['iso_639_3'],
+              '%locale%'                 => source_language['locale'],
+              '%locale_with_underscore%' => source_language['locale'].gsub('-', '_'),
+              '%original_file_name%'     => original_file_name,
+              '%android_code%'           => android_locale_code(source_language['locale']),
+              '%original_path%'          => original_path,
+              '%file_extension%'         => file_extension,
+              '%file_name%'              => file_extension,
+            })
+
+            diff = (dest.split('/') - file_pattern.split('/')).join('/')
+            export_pattern = file['translation'].sub('**', diff)
+
+            local_files << { dest: dest, source: source, export_pattern: export_pattern }
           end
+
         end
       end
 
@@ -176,45 +203,32 @@ command :upload do |c|
 
       project_info = @crowdin.project_info
 
-      remote_project_tree = walk_remote_tree(project_info['files'])
+      remote_project_tree = walk_remote_tree(project_info['info']['files']['items'])
 
-      # Array of project languages
       if language == 'all'
-        project_languages = project_info['languages'].collect{ |h| h['code'] }
+        project_languages = project_info['info']['languages']['items'].collect{ |h| h['code'] }
       else
         project_languages = [] << language
       end
 
-      # Crowdin supported languages list
-      supported_languages = @crowdin.supported_languages
-      supported_languages.select!{ |lang| project_languages.include?(lang['crowdin_code']) }
+      supported_languages = @crowdin.supported_languages['languages']
+      translation_languages = supported_languages.select{ |lang| project_languages.include?(lang['crowdin_code']) }
+
+      source_language =  'en'
+      source_language = supported_languages.find{ |lang| lang['crowdin_code'] == source_language }
 
       translated_files = Hash.new{ |hash, key| hash[key] = Array.new }
 
-      # TODO gotta rewrite this shit!
       @config['files'].each do |file|
-        translation = file['translation']
-        source = file['source'] # relative path to source file in Crowdin project
+        if File.exists?("#{@base_path}#{file['source']}")
+          dest = file['source'].sub("#{@base_path}", '')
+          original_path      = File.dirname(dest)
+          original_file_name = File.basename(dest)
+          file_extension     = File.extname(dest)[1..-1]
+          file_name          = File.basename(dest, file_extension)
 
-        sources = []
-        if File.exists?("#{@local_path}#{@sources_root}#{source}")
-          sources << source
-        else
-          Dir.glob("#{@local_path}#{@sources_root}#{source}").each do |f|
-            sources << f.sub("#{@local_path}#{@sources_root}", '')
-          end
-        end
-
-        sources &= remote_project_tree[:files]
-
-        sources.each do |source|
-          original_path      = source.split('/')[1...-1].join('/')
-          original_file_name = source.split('/').last
-          file_extension     = original_file_name.split('.').last
-          file_name          = original_file_name.split('.').shift
-
-          supported_languages.each do |lang|
-            file = translation.gsub(/%.+?%/, {
+          translation_languages.each do |lang|
+            source = file['translation'].gsub(/%.+?%/, {
               '%language%'               => lang['name'],
               '%two_letter_code%'        => lang['iso_639_1'],
               '%tree_letter_code%'       => lang['iso_639_3'],
@@ -226,15 +240,59 @@ command :upload do |c|
               '%file_extension%'         => file_extension,
               '%file_name%'              => file_extension,
             })
-            translated_files[lang['crowdin_code']] << { source: @local_path + file, dest: source }
+
+            translated_files[lang['crowdin_code']] << { source: "#{@base_path}#{source}", dest: dest }
           end
-        end
-      end
+        else
+          Dir.glob("#{@base_path}#{file['source']}").each do |source|
+            dest = source.sub("#{@base_path}", '')
+            original_path      = File.dirname(dest)
+            original_file_name = File.basename(dest)
+            file_extension     = File.extname(dest)
+            file_name          = File.basename(dest, file_extension)
+
+            file_pattern = file['translation'].gsub(/%.+?%/, {
+              '%language%'               => source_language['name'],
+              '%two_letter_code%'        => source_language['iso_639_1'],
+              '%tree_letter_code%'       => source_language['iso_639_3'],
+              '%locale%'                 => source_language['locale'],
+              '%locale_with_underscore%' => source_language['locale'].gsub('-', '_'),
+              '%original_file_name%'     => original_file_name,
+              '%android_code%'           => android_locale_code(source_language['locale']),
+              '%original_path%'          => original_path,
+              '%file_extension%'         => file_extension,
+              '%file_name%'              => file_extension,
+            })
+
+            diff = (dest.split('/') - file_pattern.split('/')).join('/')
+            export_pattern = file['translation'].sub('**', diff)
+
+            translation_languages.each do |lang|
+              source = export_pattern.gsub(/%.+?%/, {
+                '%language%'               => lang['name'],
+                '%two_letter_code%'        => lang['iso_639_1'],
+                '%tree_letter_code%'       => lang['iso_639_3'],
+                '%locale%'                 => lang['locale'],
+                '%locale_with_underscore%' => lang['locale'].gsub('-', '_'),
+                '%original_file_name%'     => original_file_name,
+                '%android_code%'           => android_locale_code(lang['locale']),
+                '%original_path%'          => original_path,
+                '%file_extension%'         => file_extension,
+                '%file_name%'              => file_extension,
+              })
+
+              translated_files[lang['crowdin_code']] << { source: "#{@base_path}#{source}", dest: dest }
+            end
+
+          end
+        end # if
+      end # @config['files']
 
       params = {}
       params[:import_duplicates]     = options[:import_dublicates]     ? 1 : 0
       params[:import_eq_suggestions] = options[:import_eq_suggestions] ? 1 : 0
       params[:auto_approve_imported] = options[:auto_approve_imported] ? 1 : 0
+
 
       translated_files.each do |language, files|
         files.each do |file|
@@ -269,7 +327,7 @@ command :download do |c|
     file = Tempfile.new(language)
     begin
       @crowdin.download_translation(language, :output => file)
-      unzip_file(file, @local_path)
+      unzip_file(file, @base_path)
     ensure
       file.close
       file.unlink # delete the temp file
@@ -287,21 +345,18 @@ pre do |global ,command, options, args|
 
   @config = YAML.load_file(global[:config])
 
-  #@local_path = @config['local_path'] || Dir.pwd
-  if @config['local_path']
-    if @config['local_path'].start_with?('/')
-      @local_path = @config['local_path']
+  #@base_path = @config['base_path'] || Dir.pwd
+  if @config['base_path']
+    if @config['base_path'].start_with?('/')
+      @base_path = @config['base_path']
     else
-      @local_path = Dir.pwd + '/' + @config['local_path']
+      @base_path = Dir.pwd + '/' + @config['base_path']
     end
   else
-    @local_path = Dir.pwd
+    @base_path = Dir.pwd
   end
 
-  # string.insert(0, '/')
-  @sources_root = @config['sources_root']
-
-  @crowdin = Crowdin::API.new(api_key: @config['api_key'], project_id: @config['project_id'], base_url: @config['base_url'])
+  @crowdin = Crowdin::API.new(api_key: @config['api_key'], project_id: @config['project_id'], base_url: @config['base_url'] || 'http://api.crowdin.net')
 
   puts "Executing #{command.name}" if global[:v]
   true
