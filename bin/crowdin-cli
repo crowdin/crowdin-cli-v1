@@ -212,7 +212,7 @@ command :upload do |c|
       supported_languages = @crowdin.supported_languages
       translation_languages = supported_languages.select{ |lang| project_languages.include?(lang['crowdin_code']) }
 
-      source_language =  'en'
+      source_language = project_info['source_language']['code']
       source_language = supported_languages.find{ |lang| lang['crowdin_code'] == source_language }
 
       translated_files = Hash.new{ |hash, key| hash[key] = Array.new }
