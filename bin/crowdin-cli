@@ -104,14 +104,13 @@ command :upload do |c|
     c.action do |global_options, options, args|
       project_info = @crowdin.project_info
 
-      #source_language = project_info['info']['source_language']
-      source_language =  'en'
+      source_language = project_info['source_language']['code']
 
       # Crowdin supported languages list
-      supported_languages = @crowdin.supported_languages['languages']
+      supported_languages = @crowdin.supported_languages
       source_language = supported_languages.find{ |lang| lang['crowdin_code'] == source_language }
 
-      remote_project_tree = walk_remote_tree(project_info['info']['files']['items'])
+      remote_project_tree = walk_remote_tree(project_info['files'])
 
       local_files = []
       @config['files'].each do |file|
@@ -203,15 +202,15 @@ command :upload do |c|
 
       project_info = @crowdin.project_info
 
-      remote_project_tree = walk_remote_tree(project_info['info']['files']['items'])
+      remote_project_tree = walk_remote_tree(project_info['files'])
 
       if language == 'all'
-        project_languages = project_info['info']['languages']['items'].collect{ |h| h['code'] }
+        project_languages = project_info['languages'].collect{ |h| h['code'] }
       else
         project_languages = [] << language
       end
 
-      supported_languages = @crowdin.supported_languages['languages']
+      supported_languages = @crowdin.supported_languages
       translation_languages = supported_languages.select{ |lang| project_languages.include?(lang['crowdin_code']) }
 
       source_language =  'en'
@@ -356,6 +355,7 @@ pre do |global ,command, options, args|
     @base_path = Dir.pwd
   end
 
+  Crowdin::API.log = Logger.new($stderr) if global[:v]
   @crowdin = Crowdin::API.new(api_key: @config['api_key'], project_id: @config['project_id'], base_url: @config['base_url'] || 'http://api.crowdin.net')
 
   puts "Executing #{command.name}" if global[:v]

@@ -5,6 +5,7 @@ require 'crowdin-cli/version.rb'
 
 require 'yaml'
 require 'json'
+require 'logger'
 require 'gli'
 require 'zip/zip'
 require 'crowdin-api'
