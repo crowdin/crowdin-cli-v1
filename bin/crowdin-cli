@@ -161,7 +161,6 @@ command :upload do |c|
       # array containing elements common to the two arrays
       update_files = local_project_tree[:files] & remote_project_tree[:files]
       files_for_upload = local_files.select{ |file| update_files.include?(file[:dest]) }
-      files_for_upload.map{ |file| file.keep_if{ |k, v| [:source, :dest].include?(k) } }
       files_for_upload.each do |file|
         puts "Update file `#{file[:dest]}`"
         @crowdin.update_file([] << file)
