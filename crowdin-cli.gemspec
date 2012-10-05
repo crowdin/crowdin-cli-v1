@@ -26,7 +26,7 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency('aruba')
   gem.add_runtime_dependency('gli', '2.1.0')
   gem.add_runtime_dependency('rubyzip', '0.9.9')
-  gem.add_runtime_dependency('crowdin-api', '0.0.5')
+  gem.add_runtime_dependency('crowdin-api', '0.0.6')
   gem.platform = Gem::Platform::RUBY
   gem.required_ruby_version = '>= 1.9.3'
 end
