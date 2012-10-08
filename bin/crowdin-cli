@@ -126,12 +126,12 @@ command :upload do |c|
 
             file_pattern = file['translation'].gsub(/%.+?%/, {
               '%language%'               => source_language['name'],
-              '%two_letter_code%'        => source_language['iso_639_1'],
-              '%tree_letter_code%'       => source_language['iso_639_3'],
+              '%two_letters_code%'       => source_language['iso_639_1'],
+              '%tree_letters_code%'      => source_language['iso_639_3'],
               '%locale%'                 => source_language['locale'],
               '%locale_with_underscore%' => source_language['locale'].gsub('-', '_'),
-              '%original_file_name%'     => original_file_name,
               '%android_code%'           => android_locale_code(source_language['locale']),
+              '%original_file_name%'     => original_file_name,
               '%original_path%'          => original_path,
               '%file_extension%'         => file_extension,
               '%file_name%'              => file_extension,
@@ -228,12 +228,12 @@ command :upload do |c|
           translation_languages.each do |lang|
             source = file['translation'].gsub(/%.+?%/, {
               '%language%'               => lang['name'],
-              '%two_letter_code%'        => lang['iso_639_1'],
-              '%tree_letter_code%'       => lang['iso_639_3'],
+              '%two_letters_code%'       => lang['iso_639_1'],
+              '%tree_letters_code%'      => lang['iso_639_3'],
               '%locale%'                 => lang['locale'],
               '%locale_with_underscore%' => lang['locale'].gsub('-', '_'),
-              '%original_file_name%'     => original_file_name,
               '%android_code%'           => android_locale_code(lang['locale']),
+              '%original_file_name%'     => original_file_name,
               '%original_path%'          => original_path,
               '%file_extension%'         => file_extension,
               '%file_name%'              => file_extension,
@@ -251,12 +251,12 @@ command :upload do |c|
 
             file_pattern = file['translation'].gsub(/%.+?%/, {
               '%language%'               => source_language['name'],
-              '%two_letter_code%'        => source_language['iso_639_1'],
-              '%tree_letter_code%'       => source_language['iso_639_3'],
+              '%two_letters_code%'       => source_language['iso_639_1'],
+              '%tree_letters_code%'      => source_language['iso_639_3'],
               '%locale%'                 => source_language['locale'],
               '%locale_with_underscore%' => source_language['locale'].gsub('-', '_'),
-              '%original_file_name%'     => original_file_name,
               '%android_code%'           => android_locale_code(source_language['locale']),
+              '%original_file_name%'     => original_file_name,
               '%original_path%'          => original_path,
               '%file_extension%'         => file_extension,
               '%file_name%'              => file_extension,
@@ -268,12 +268,12 @@ command :upload do |c|
             translation_languages.each do |lang|
               source = export_pattern.gsub(/%.+?%/, {
                 '%language%'               => lang['name'],
-                '%two_letter_code%'        => lang['iso_639_1'],
-                '%tree_letter_code%'       => lang['iso_639_3'],
+                '%two_letters_code%'       => lang['iso_639_1'],
+                '%tree_letters_code%'      => lang['iso_639_3'],
                 '%locale%'                 => lang['locale'],
                 '%locale_with_underscore%' => lang['locale'].gsub('-', '_'),
-                '%original_file_name%'     => original_file_name,
                 '%android_code%'           => android_locale_code(lang['locale']),
+                '%original_file_name%'     => original_file_name,
                 '%original_path%'          => original_path,
                 '%file_extension%'         => file_extension,
                 '%file_name%'              => file_extension,
