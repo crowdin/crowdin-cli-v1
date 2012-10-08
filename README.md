@@ -38,7 +38,7 @@ base_path: /path/to/your/project
 files:
   -
     source: /locale/en/LC_MESSAGES/messages.po
-    translation: /locale/%two_letter_code%/LC_MESSAGES/%original_file_name%
+    translation: /locale/%two_letters_code%/LC_MESSAGES/%original_file_name%
 ```
 
 * `api_key` - Crowdin Project API key
@@ -51,8 +51,8 @@ files:
     
         Use the following placeholders to put appropriate variables into the resulting file name:
       * `%language%` - Language name (i.e. Ukrainian)
-      * `%two_letter_code%` - Language code ISO 639-1 (i.e. uk)
-      * `%three_letter_code%` - Language code ISO 639-2/T (i.e. ukr)
+      * `%two_letters_code%` - Language code ISO 639-1 (i.e. uk)
+      * `%three_letters_code%` - Language code ISO 639-2/T (i.e. ukr)
       * `%locale%` - Locale (like uk-UA)
       * `%locale_with_underscore%` - Locale (i.e. uk_UA)
       * `%original_file_name%` - Original file name
@@ -67,7 +67,7 @@ files:
           ```
          Example for Gettext projects:
           ```
-          /locale/%two_letter_code%/LC_MESSAGES/%original_file_name%
+          /locale/%two_letters_code%/LC_MESSAGES/%original_file_name%
           ```
 
 Also you can add and upload all directories mathing the pattern including all nested files and localizable files.
@@ -83,7 +83,7 @@ base_path: /path/to/your/project
 files:
   -
     source: /locale/en/**/*.po
-    translation: /locale/%two_letter_code%/**/%original_file_name%
+    translation: /locale/%two_letters_code%/**/%original_file_name%
 ```
 ## Usage
 
