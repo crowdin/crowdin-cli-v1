@@ -40,9 +40,9 @@ def walk_local_tree(files, result = { dirs: [], files: [] })
   return result
 end
 
-# path - relative path in Crowdin project
-# export_pattern - basically, is a file['translation'] from crowdin.yaml
-# lang - Hash containing language information
+# +path_ - relative path to file in Crowdin project
+# +export_pattern+ - basically, is a file['translation'] from crowdin.yaml
+# +lang+ - Hash containing language information
 #
 def export_pattern_to_path(path, export_pattern, lang)
   original_path      = File.dirname(path)
