@@ -40,6 +40,30 @@ def walk_local_tree(files, result = { dirs: [], files: [] })
   return result
 end
 
+# path - relative path in Crowdin project
+# export_pattern - basically, is a file['translation'] from crowdin.yaml
+# lang - Hash containing language information
+#
+def export_pattern_to_path(path, export_pattern, lang)
+  original_path      = File.dirname(path)
+  original_file_name = File.basename(path)
+  file_extension     = File.extname(path)[1..-1]
+  file_name          = File.basename(path, file_extension)
+
+  export_pattern.gsub(/%.+?%/, {
+    '%language%'               => lang['name'],
+    '%two_letters_code%'       => lang['iso_639_1'],
+    '%tree_letters_code%'      => lang['iso_639_3'],
+    '%locale%'                 => lang['locale'],
+    '%locale_with_underscore%' => lang['locale'].gsub('-', '_'),
+    '%android_code%'           => android_locale_code(lang['locale']),
+    '%original_file_name%'     => original_file_name,
+    '%original_path%'          => original_path,
+    '%file_extension%'         => file_extension,
+    '%file_name%'              => file_extension,
+  })
+end
+
 def unzip_file(file, dest)
   # overwrite files if they already exist inside of the extracted path
   Zip.options[:on_exists_proc] = true
@@ -119,23 +143,7 @@ command :upload do |c|
         else
           Dir.glob("#{@base_path}#{file['source']}").each do |source|
             dest = source.sub("#{@base_path}", '') # relative path in Crowdin
-            original_path      = File.dirname(dest)
-            original_file_name = File.basename(dest)
-            file_extension     = File.extname(dest)
-            file_name          = File.basename(dest, file_extension)
-
-            file_pattern = file['translation'].gsub(/%.+?%/, {
-              '%language%'               => source_language['name'],
-              '%two_letters_code%'       => source_language['iso_639_1'],
-              '%tree_letters_code%'      => source_language['iso_639_3'],
-              '%locale%'                 => source_language['locale'],
-              '%locale_with_underscore%' => source_language['locale'].gsub('-', '_'),
-              '%android_code%'           => android_locale_code(source_language['locale']),
-              '%original_file_name%'     => original_file_name,
-              '%original_path%'          => original_path,
-              '%file_extension%'         => file_extension,
-              '%file_name%'              => file_extension,
-            })
+            file_pattern = export_pattern_to_path(dest, file['translation'], source_language)
 
             diff = (dest.split('/') - file_pattern.split('/')).join('/')
             export_pattern = file['translation'].sub('**', diff)
@@ -220,64 +228,23 @@ command :upload do |c|
       @config['files'].each do |file|
         if File.exists?("#{@base_path}#{file['source']}")
           dest = file['source'].sub("#{@base_path}", '')
-          original_path      = File.dirname(dest)
-          original_file_name = File.basename(dest)
-          file_extension     = File.extname(dest)[1..-1]
-          file_name          = File.basename(dest, file_extension)
 
           translation_languages.each do |lang|
-            source = file['translation'].gsub(/%.+?%/, {
-              '%language%'               => lang['name'],
-              '%two_letters_code%'       => lang['iso_639_1'],
-              '%tree_letters_code%'      => lang['iso_639_3'],
-              '%locale%'                 => lang['locale'],
-              '%locale_with_underscore%' => lang['locale'].gsub('-', '_'),
-              '%android_code%'           => android_locale_code(lang['locale']),
-              '%original_file_name%'     => original_file_name,
-              '%original_path%'          => original_path,
-              '%file_extension%'         => file_extension,
-              '%file_name%'              => file_extension,
-            })
+            source = export_pattern_to_path(dest, file['translation'], lang)
 
             translated_files[lang['crowdin_code']] << { source: "#{@base_path}#{source}", dest: dest }
           end
         else
           Dir.glob("#{@base_path}#{file['source']}").each do |source|
             dest = source.sub("#{@base_path}", '')
-            original_path      = File.dirname(dest)
-            original_file_name = File.basename(dest)
-            file_extension     = File.extname(dest)
-            file_name          = File.basename(dest, file_extension)
 
-            file_pattern = file['translation'].gsub(/%.+?%/, {
-              '%language%'               => source_language['name'],
-              '%two_letters_code%'       => source_language['iso_639_1'],
-              '%tree_letters_code%'      => source_language['iso_639_3'],
-              '%locale%'                 => source_language['locale'],
-              '%locale_with_underscore%' => source_language['locale'].gsub('-', '_'),
-              '%android_code%'           => android_locale_code(source_language['locale']),
-              '%original_file_name%'     => original_file_name,
-              '%original_path%'          => original_path,
-              '%file_extension%'         => file_extension,
-              '%file_name%'              => file_extension,
-            })
+            file_pattern = export_pattern_to_path(dest, file['translation'], source_language)
 
             diff = (dest.split('/') - file_pattern.split('/')).join('/')
             export_pattern = file['translation'].sub('**', diff)
 
             translation_languages.each do |lang|
-              source = export_pattern.gsub(/%.+?%/, {
-                '%language%'               => lang['name'],
-                '%two_letters_code%'       => lang['iso_639_1'],
-                '%tree_letters_code%'      => lang['iso_639_3'],
-                '%locale%'                 => lang['locale'],
-                '%locale_with_underscore%' => lang['locale'].gsub('-', '_'),
-                '%android_code%'           => android_locale_code(lang['locale']),
-                '%original_file_name%'     => original_file_name,
-                '%original_path%'          => original_path,
-                '%file_extension%'         => file_extension,
-                '%file_name%'              => file_extension,
-              })
+              source = export_pattern_to_path(dest, export_pattern, lang)
 
               translated_files[lang['crowdin_code']] << { source: "#{@base_path}#{source}", dest: dest }
             end
