@@ -4,6 +4,8 @@ A Command-Line Interface to sync files between your computer/server and [Crowdin
 
 It is cross-platform and runs in a terminal (Linux, MacOS X) or in cmd.exe (Windows).
 
+> **WARNING**: This is a development version: It contains the latest changes, but may also have severe known issues, including crashes and data loss situations. In fact, it may not work at all.
+
 ## Installation
 
 Add this line to your application's Gemfile:
