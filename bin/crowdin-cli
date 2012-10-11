@@ -177,14 +177,14 @@ command :upload do |c|
 
       local_project_tree = get_local_files_hierarchy(local_files.collect{ |h| h[:dest] })
 
-      ###
       common_dir = find_common_directory_path(dest_files)
-
-      local_files.each{ |file| file[:dest].sub!(common_dir, '') }
-      local_project_tree[:dirs].each{ |dir| dir.sub!(common_dir, '')}
-      local_project_tree[:dirs].delete_if{ |dir| dir == ''}
-      local_project_tree[:files].each{ |file| file.sub!(common_dir, '')}
-      ###
+      
+      if common_dir
+        local_files.each{ |file| file[:dest].sub!(common_dir, '') }
+        local_project_tree[:dirs].each{ |dir| dir.sub!(common_dir, '')}
+        local_project_tree[:dirs].delete_if{ |dir| dir == ''}
+        local_project_tree[:files].each{ |file| file.sub!(common_dir, '')}
+      end
 
       # Create directory tree
       #
