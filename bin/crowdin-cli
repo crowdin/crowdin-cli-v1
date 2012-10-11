@@ -78,6 +78,20 @@ def android_locale_code(locale_code)
   return locale_code.sub('-', '-r')
 end
 
+# Return a string representing that part of the directory tree that is common to all the files
+#
+# @params [Array] paths set of strings representing directory paths
+#
+def find_common_directory_path(paths)
+  return paths.first if paths.length <= 1
+  arr = paths.sort
+  first = arr.first.split('/')
+  last = arr.last.split('/')
+  i = 0
+  i += 1 while first[i] == last[i] && i <= first.length
+  first.slice(0, i).join('/')
+end
+
 def unzip_file(file, dest)
   # overwrite files if they already exist inside of the extracted path
   Zip.options[:on_exists_proc] = true
@@ -141,12 +155,14 @@ command :upload do |c|
       remote_project_tree = get_remote_files_hierarchy(project_info['files'])
 
       local_files = []
+      dest_files = []
       @config['files'].each do |file|
         if File.exist?("#{@base_path}#{file['source']}")
           local_files << { dest: file['source'], source: "#{@base_path}#{file['source']}", export_pattern: file['translation'] }
         else
           Dir.glob("#{@base_path}#{file['source']}").each do |source|
             dest = source.sub("#{@base_path}", '') # relative path in Crowdin
+            dest_files << dest
 
             file_pattern = export_pattern_to_path(dest, file['translation'], source_language)
 
@@ -160,6 +176,15 @@ command :upload do |c|
       end
 
       local_project_tree = get_local_files_hierarchy(local_files.collect{ |h| h[:dest] })
+
+      ###
+      common_dir = find_common_directory_path(dest_files)
+
+      local_files.each{ |file| file[:dest].sub!(common_dir, '') }
+      local_project_tree[:dirs].each{ |dir| dir.sub!(common_dir, '')}
+      local_project_tree[:dirs].delete_if{ |dir| dir == ''}
+      local_project_tree[:files].each{ |file| file.sub!(common_dir, '')}
+      ###
 
       # Create directory tree
       #
@@ -229,6 +254,7 @@ command :upload do |c|
       source_language = supported_languages.find{ |lang| lang['crowdin_code'] == source_language }
 
       translated_files = Hash.new{ |hash, key| hash[key] = Array.new }
+      dest_files = []
 
       @config['files'].each do |file|
         if File.exists?("#{@base_path}#{file['source']}")
@@ -241,6 +267,7 @@ command :upload do |c|
         else
           Dir.glob("#{@base_path}#{file['source']}").each do |source|
             dest = source.sub("#{@base_path}", '') # relative path in Crowdin
+            dest_files << dest
 
             file_pattern = export_pattern_to_path(dest, file['translation'], source_language)
 
@@ -261,9 +288,11 @@ command :upload do |c|
       params[:import_eq_suggestions] = options[:import_eq_suggestions] ? 1 : 0
       params[:auto_approve_imported] = options[:auto_approve_imported] ? 1 : 0
 
+      common_dir = find_common_directory_path(dest_files)
 
       translated_files.each do |language, files|
         files.each do |file|
+          file[:dest].sub!(common_dir, '')
           if File.exist?(file[:source])
             puts "Uploading #{file[:source].sub(@base_path, '')}"
             @crowdin.upload_translation([] << file, language, params)
