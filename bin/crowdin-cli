@@ -3,46 +3,50 @@
 require 'pp'
 require 'crowdin-cli'
 
-# using for upload source files
-# return existing directory structure in Crowdin project
+# Return +hierarchy+ of directories and files in Crowdin project
 #
-def walk_remote_tree(files, root = '/', result = { dirs: [], files: [] })
+# +files+ - basically, it's project files details from API method `project_info`
+#
+def get_remote_files_hierarchy(files, root = '/', hierarchy = { dirs: [], files: [] })
   files.each do |node|
     case node['node_type']
     when 'directory'
-      result[:dirs] << "#{root}#{node['name']}"
-      walk_remote_tree(node['files'], root + node['name'] + '/', result)
+      hierarchy[:dirs] << "#{root}#{node['name']}"
+      get_remote_files_hierarchy(node['files'], root + node['name'] + '/', hierarchy)
     when 'file'
-      result[:files] << "#{root}#{node['name']}"
+      hierarchy[:files] << "#{root}#{node['name']}"
     end
   end
 
-  return result
+  return hierarchy
 end
 
-# using for upload source files
-# return local directory structute
-# first argument: ['/path/to/admin/en.xml', '/path/to/user/settings/strings.xml']
+# Return +hierarchy+ of local directories and files
 #
-def walk_local_tree(files, result = { dirs: [], files: [] })
-  result[:files] = files
+# @params [Array] files a list of files in a local directory.
+#
+def get_local_files_hierarchy(files, hierarchy = { dirs: [], files: [] })
+  hierarchy[:files] = files
 
-  files = files.inject([]) do |res, a|
+  dirs = files.inject([]) do |res, a|
     res << a.split('/').drop(1).inject([]) do |res, s|
       res << res.last.to_s + '/' + s
     end
   end
-  # Ex: files = [["/path", "/path/to", "/path/to/admin", "/path/to/admin/en.xml"], ... ]
+  dirs.map(&:pop) # delete last element from each array
+  hierarchy[:dirs] = dirs.flatten.uniq
 
-  files.map(&:pop) # delete last element from each array
-  result[:dirs] = files.flatten.uniq
-
-  return result
+  return hierarchy
 end
 
-# +path_ - relative path to file in Crowdin project
-# +export_pattern+ - basically, is a file['translation'] from crowdin.yaml
-# +lang+ - Hash containing language information
+# @param [String] path relative path to file in Crowdin project
+# @param [String] export_pattern basically, is a file['translation'] from crowdin.yaml
+# @param [Hash] lang language information
+# @option lang [String] :name
+# @option lang [String] :crowdin_code
+# @option lang [String] :iso_639_1
+# @option lang [String] :iso_639_3
+# @option lang [String] :locale
 #
 def export_pattern_to_path(path, export_pattern, lang)
   original_path      = File.dirname(path)
@@ -64,6 +68,16 @@ def export_pattern_to_path(path, export_pattern, lang)
   })
 end
 
+def android_locale_code(locale_code)
+  locale_code = case locale_code
+    when 'he-IL' then 'iw-IL'
+    when 'yi-DE' then 'ji-DE'
+    when 'id-ID' then 'in-ID'
+    else locale_code
+  end
+  return locale_code.sub('-', '-r')
+end
+
 def unzip_file(file, dest)
   # overwrite files if they already exist inside of the extracted path
   Zip.options[:on_exists_proc] = true
@@ -78,15 +92,6 @@ def unzip_file(file, dest)
   end
 end
 
-def android_locale_code(locale_code)
-  locale_code = case locale_code
-    when 'he-IL' then 'iw-IL'
-    when 'yi-DE' then 'ji-DE'
-    when 'id-ID' then 'in-ID'
-    else locale_code
-  end
-  return locale_code.sub('-', '-r')
-end
 
 ###
 include GLI::App
@@ -122,7 +127,6 @@ command :upload do |c|
   #  end
   #end
 
-  # TODO: change variables names!
   c.desc 'Upload source files'
   c.command :sources do |c|
     c.action do |global_options, options, args|
@@ -134,7 +138,7 @@ command :upload do |c|
       supported_languages = @crowdin.supported_languages
       source_language = supported_languages.find{ |lang| lang['crowdin_code'] == source_language }
 
-      remote_project_tree = walk_remote_tree(project_info['files'])
+      remote_project_tree = get_remote_files_hierarchy(project_info['files'])
 
       local_files = []
       @config['files'].each do |file|
@@ -143,6 +147,7 @@ command :upload do |c|
         else
           Dir.glob("#{@base_path}#{file['source']}").each do |source|
             dest = source.sub("#{@base_path}", '') # relative path in Crowdin
+
             file_pattern = export_pattern_to_path(dest, file['translation'], source_language)
 
             diff = (dest.split('/') - file_pattern.split('/')).join('/')
@@ -154,7 +159,7 @@ command :upload do |c|
         end
       end
 
-      local_project_tree = walk_local_tree(local_files.collect{ |h| h[:dest] })
+      local_project_tree = get_local_files_hierarchy(local_files.collect{ |h| h[:dest] })
 
       # Create directory tree
       #
@@ -209,7 +214,7 @@ command :upload do |c|
 
       project_info = @crowdin.project_info
 
-      remote_project_tree = walk_remote_tree(project_info['files'])
+      remote_project_tree = get_remote_files_hierarchy(project_info['files'])
 
       if language == 'all'
         project_languages = project_info['languages'].collect{ |h| h['code'] }
@@ -231,12 +236,11 @@ command :upload do |c|
 
           translation_languages.each do |lang|
             source = export_pattern_to_path(dest, file['translation'], lang)
-
             translated_files[lang['crowdin_code']] << { source: "#{@base_path}#{source}", dest: dest }
           end
         else
           Dir.glob("#{@base_path}#{file['source']}").each do |source|
-            dest = source.sub("#{@base_path}", '')
+            dest = source.sub("#{@base_path}", '') # relative path in Crowdin
 
             file_pattern = export_pattern_to_path(dest, file['translation'], source_language)
 
@@ -245,7 +249,6 @@ command :upload do |c|
 
             translation_languages.each do |lang|
               source = export_pattern_to_path(dest, export_pattern, lang)
-
               translated_files[lang['crowdin_code']] << { source: "#{@base_path}#{source}", dest: dest }
             end
 
@@ -262,7 +265,7 @@ command :upload do |c|
       translated_files.each do |language, files|
         files.each do |file|
           if File.exist?(file[:source])
-            puts "Uploading #{file[:source]}"
+            puts "Uploading #{file[:source].sub(@base_path, '')}"
             @crowdin.upload_translation([] << file, language, params)
           else
             puts "Local file #{file[:source]} not exists"
