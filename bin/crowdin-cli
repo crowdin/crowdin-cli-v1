@@ -156,8 +156,10 @@ command :upload do |c|
 
       local_files = []
       dest_files = []
+
       @config['files'].each do |file|
         if File.exist?("#{@base_path}#{file['source']}")
+          dest_files << file['source']
           local_files << { dest: file['source'], source: "#{@base_path}#{file['source']}", export_pattern: file['translation'] }
         else
           Dir.glob("#{@base_path}#{file['source']}").each do |source|
@@ -175,16 +177,11 @@ command :upload do |c|
         end
       end
 
-      local_project_tree = get_local_files_hierarchy(local_files.collect{ |h| h[:dest] })
-
       common_dir = find_common_directory_path(dest_files)
-      
-      if common_dir
-        local_files.each{ |file| file[:dest].sub!(common_dir, '') }
-        local_project_tree[:dirs].each{ |dir| dir.sub!(common_dir, '')}
-        local_project_tree[:dirs].delete_if{ |dir| dir == ''}
-        local_project_tree[:files].each{ |file| file.sub!(common_dir, '')}
-      end
+
+      local_project_tree = get_local_files_hierarchy(local_files.collect{ |h| h[:dest].sub(common_dir, '') })
+
+      local_files.each{ |file| file[:dest].sub!(common_dir, '') }
 
       # Create directory tree
       #
@@ -259,6 +256,7 @@ command :upload do |c|
       @config['files'].each do |file|
         if File.exists?("#{@base_path}#{file['source']}")
           dest = file['source'].sub("#{@base_path}", '')
+          dest_files << dest
 
           translation_languages.each do |lang|
             source = export_pattern_to_path(dest, file['translation'], lang)
