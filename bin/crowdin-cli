@@ -293,11 +293,16 @@ command :upload do |c|
       translated_files.each do |language, files|
         files.each do |file|
           file[:dest].sub!(common_dir, '')
-          if File.exist?(file[:source])
-            puts "Uploading #{file[:source].sub(@base_path, '')}"
-            @crowdin.upload_translation([] << file, language, params)
+          if remote_project_tree[:files].include?(file[:dest])
+            if File.exist?(file[:source])
+              puts "Uploading #{file[:source].sub(@base_path, '')}"
+              @crowdin.upload_translation([] << file, language, params)
+            else
+              puts "Local file #{file[:source]} not exists"
+            end
           else
-            puts "Local file #{file[:source]} not exists"
+            # if source file not exist, don't upload translation
+            puts "Skip #{file[:source].sub(@base_path, '')}"
           end
         end
       end
