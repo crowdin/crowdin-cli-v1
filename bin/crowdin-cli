@@ -83,7 +83,7 @@ end
 # @params [Array] paths set of strings representing directory paths
 #
 def find_common_directory_path(paths)
-  return paths.first if paths.length <= 1
+  return paths.first.split('/').slice(0...-1).join('/') if paths.length <= 1
   arr = paths.sort
   first = arr.first.split('/')
   last = arr.last.split('/')
