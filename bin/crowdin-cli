@@ -197,8 +197,7 @@ command :upload do |c|
         @crowdin.add_directory(dir)
       end
 
-
-      if options[:ignore_dublicates]
+      unless options[:ignore_duplicates]
         # Update existing files in Crowdin project
         #
         # array containing elements common to the two arrays
