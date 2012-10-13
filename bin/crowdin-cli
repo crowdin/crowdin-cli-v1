@@ -143,6 +143,10 @@ command :upload do |c|
 
   c.desc 'Upload source files'
   c.command :sources do |c|
+
+    c.desc 'defines whether to add sources if there is the same file previously added'
+    c.switch [:ignore_duplicates]
+
     c.action do |global_options, options, args|
       project_info = @crowdin.project_info
 
@@ -177,6 +181,8 @@ command :upload do |c|
         end
       end
 
+      exit_now!("Nothing to upload") if local_files.empty?
+
       common_dir = find_common_directory_path(dest_files)
 
       local_project_tree = get_local_files_hierarchy(local_files.collect{ |h| h[:dest].sub(common_dir, '') })
@@ -191,14 +197,17 @@ command :upload do |c|
         @crowdin.add_directory(dir)
       end
 
-      # Update existing files in Crowdin project
-      #
-      # array containing elements common to the two arrays
-      update_files = local_project_tree[:files] & remote_project_tree[:files]
-      files_for_upload = local_files.select{ |file| update_files.include?(file[:dest]) }
-      files_for_upload.each do |file|
-        puts "Update file `#{file[:dest]}`"
-        @crowdin.update_file([] << file)
+
+      if options[:ignore_dublicates]
+        # Update existing files in Crowdin project
+        #
+        # array containing elements common to the two arrays
+        update_files = local_project_tree[:files] & remote_project_tree[:files]
+        files_for_upload = local_files.select{ |file| update_files.include?(file[:dest]) }
+        files_for_upload.each do |file|
+          puts "Update file `#{file[:dest]}`"
+          @crowdin.update_file([] << file)
+        end
       end
 
       # Add new files to Crowdin project
@@ -280,6 +289,8 @@ command :upload do |c|
           end
         end # if
       end # @config['files']
+
+      exit_now!("Nothing to upload") if dest_files.empty?
 
       params = {}
       params[:import_duplicates]     = options[:import_dublicates]     ? 1 : 0
