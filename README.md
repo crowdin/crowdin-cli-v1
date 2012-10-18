@@ -102,7 +102,7 @@ files:
     source: /locale/en/**/*.po
     translation: /locale/%two_letters_code%/**/%original_file_name%
     languages_mapping:
-      '%two_letters_code%':
+      two_letters_code:
         ru: ros
         uk: ukr
 ```
