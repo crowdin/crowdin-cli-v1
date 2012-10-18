@@ -87,6 +87,26 @@ files:
     source: /locale/en/**/*.po
     translation: /locale/%two_letters_code%/**/%original_file_name%
 ```
+
+Languages mapping.
+
+```
+---
+project_id: test
+api_key: KeepTheAPIkeySecret
+base_url: http://api.crowdin.net
+base_path: /path/to/your/project
+
+files:
+  -
+    source: /locale/en/**/*.po
+    translation: /locale/%two_letters_code%/**/%original_file_name%
+    languages_mapping:
+      '%two_letters_code%':
+        ru: ros
+        uk: ukr
+```
+
 ## Usage
 
 

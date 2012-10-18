@@ -289,10 +289,10 @@ command :upload do |c|
             file_pattern = export_pattern_to_path(dest, file['translation'], source_language)
 
             diff = (dest.split('/') - file_pattern.split('/')).join('/')
-            export_pattern = file['translation'].sub('**', diff)
+            export_pattern = file['translation'].sub('**', diff) # !!!
 
             translation_languages.each do |lang|
-              source = export_pattern_to_path(dest, export_pattern, lang)
+              source = export_pattern_to_path(dest, export_pattern, lang, languages_mapping)
               translated_files[lang['crowdin_code']] << { source: "#{@base_path}#{source}", dest: dest }
             end
 
