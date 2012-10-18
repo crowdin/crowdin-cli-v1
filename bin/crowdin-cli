@@ -70,7 +70,7 @@ def export_pattern_to_path(path, export_pattern, lang, languages_mapping = nil)
   unless languages_mapping.nil?
     pattern = Hash[pattern.map{|k, str| [
       k,
-      (languages_mapping[k][str] rescue nil) || str]
+      (languages_mapping[k[/%(.*)%/, 1]][str] rescue nil) || str]
     }]
   end
 
