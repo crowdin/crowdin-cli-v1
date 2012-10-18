@@ -8,7 +8,7 @@ Gem::Specification.new do |gem|
   gem.summary = 'Crowdin CLI'
   gem.author = ['Anton Maminov']
   gem.email = ['anton.linux@gmail.com']
-  gem.homepage = 'https://github.com/mamantoha/crowdin-cli'
+  gem.homepage = 'https://github.com/crowdin/crowdin-cli/'
   gem.license = 'LICENSE'
 
   gem.files = %w(
