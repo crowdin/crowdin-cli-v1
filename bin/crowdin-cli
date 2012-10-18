@@ -48,13 +48,13 @@ end
 # @option lang [String] :iso_639_3
 # @option lang [String] :locale
 #
-def export_pattern_to_path(path, export_pattern, lang)
+def export_pattern_to_path(path, export_pattern, lang, languages_mapping = nil)
   original_path      = File.dirname(path)
   original_file_name = File.basename(path)
   file_extension     = File.extname(path)[1..-1]
-  file_name          = File.basename(path, file_extension)
+  file_name          = File.basename(path, File.extname(path))
 
-  export_pattern.gsub(/%.+?%/, {
+  pattern = {
     '%language%'               => lang['name'],
     '%two_letters_code%'       => lang['iso_639_1'],
     '%tree_letters_code%'      => lang['iso_639_3'],
@@ -65,7 +65,16 @@ def export_pattern_to_path(path, export_pattern, lang)
     '%original_path%'          => original_path,
     '%file_extension%'         => file_extension,
     '%file_name%'              => file_name,
-  })
+  }
+
+  unless languages_mapping.nil?
+    pattern = Hash[pattern.map{|k, str| [
+      k,
+      (languages_mapping[k][str] rescue nil) || str]
+    }]
+  end
+
+  export_pattern.gsub(/%.+?%/, pattern)
 end
 
 def android_locale_code(locale_code)
@@ -92,20 +101,20 @@ def find_common_directory_path(paths)
   first.slice(0, i).join('/')
 end
 
-def unzip_file(file, dest)
+def unzip_file(zip, dest, files_list)
   # overwrite files if they already exist inside of the extracted path
   Zip.options[:on_exists_proc] = true
 
-  Zip::ZipFile.open(file) do |zip_file|
-    zip_file.each do |f|
-      f_path = File.join(dest, f.name)
+  Zip::ZipFile.open(zip) do |zip_file|
+    zip_file.select{|f| f.file?}.each do |f|
+      file = files_list[f.name]
+      f_path = File.join(dest, file)
       FileUtils.mkdir_p(File.dirname(f_path))
-      puts "Download: #{f}"
+      puts "Download: #{file}"
       zip_file.extract(f, f_path)
     end
   end
 end
-
 
 ###
 include GLI::App
@@ -262,6 +271,8 @@ command :upload do |c|
       dest_files = []
 
       @config['files'].each do |file|
+        languages_mapping = file['languages_mapping']
+
         if File.exists?("#{@base_path}#{file['source']}")
           dest = file['source'].sub("#{@base_path}", '')
           dest_files << dest
@@ -330,14 +341,67 @@ command :download do |c|
 
   c.action do |global_options ,options, args|
     # use export API method before to download the most recent translations
-    @crowdin.export_translations
+    #@crowdin.export_translations
 
     language = options[:language]
+    project_info = @crowdin.project_info
 
+    remote_project_tree = get_remote_files_hierarchy(project_info['files'])
+
+    if language == 'all'
+      project_languages = project_info['languages'].collect{ |h| h['code'] }
+    else
+      project_languages = [] << language
+    end
+
+    supported_languages = @crowdin.supported_languages
+    translation_languages = supported_languages.select{ |lang| project_languages.include?(lang['crowdin_code']) }
+
+    source_language = project_info['details']['source_language']['code']
+    source_language = supported_languages.find{ |lang| lang['crowdin_code'] == source_language }
+
+    # keys is all possible files in zip archive
+    # values is resulted local files
+    # usually they are equal
+    downloadable_files = {}
+
+    @config['files'].each do |file|
+      languages_mapping = file['languages_mapping'] #Hash or NilClass
+
+      if File.exists?("#{@base_path}#{file['source']}")
+        dest = file['source'].sub("#{@base_path}", '')
+
+        translation_languages.each do |lang|
+          zipper_file = export_pattern_to_path(dest, file['translation'], lang)
+          local_file  = export_pattern_to_path(dest, file['translation'], lang, languages_mapping)
+
+          downloadable_files[zipped_file] = local_file
+        end
+      else
+        Dir.glob("#{@base_path}#{file['source']}").each do |source|
+          dest = source.sub("#{@base_path}", '') # relative path in Crowdin
+
+          file_pattern = export_pattern_to_path(dest, file['translation'], source_language)
+
+          diff = (dest.split('/') - file_pattern.split('/')).join('/')
+          export_pattern = file['translation'].sub('**', diff)
+
+          translation_languages.each do |lang|
+            zipped_file = export_pattern_to_path(dest, export_pattern, lang)
+            local_file  = export_pattern_to_path(dest, export_pattern, lang, languages_mapping)
+
+            downloadable_files[zipped_file] = local_file
+          end
+
+        end
+      end # if
+    end # @config['files']
+
+    ##
     file = Tempfile.new(language)
     begin
       @crowdin.download_translation(language, :output => file)
-      unzip_file(file, @base_path)
+      unzip_file(file, @base_path, downloadable_files)
     ensure
       file.close
       file.unlink # delete the temp file
