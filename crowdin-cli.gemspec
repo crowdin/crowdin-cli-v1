@@ -6,8 +6,8 @@ Gem::Specification.new do |gem|
   gem.version = Crowdin::CLI::VERSION
 
   gem.summary = 'Crowdin CLI'
-  gem.author = ['Anton Maminov']
-  gem.email = ['anton.linux@gmail.com']
+  gem.author = ['Crowdin']
+  gem.email = ['support@crowdin.net']
   gem.homepage = 'https://github.com/crowdin/crowdin-cli/'
   gem.license = 'LICENSE'
 
