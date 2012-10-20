@@ -119,42 +119,36 @@ end
 ###
 include GLI::App
 
-program_desc 'A CLI to sync locale files with crowdin.net'
+program_desc 'is a command line tool that allows you to manage and synchronize your localization resources with Crowdin project'
+program_long_desc 'This tool requires configuration file to be created. See http://crowdin.net/page/cli-client for more details.'
+sort_help :manually # help commands are ordered in the order declared
+wrap_help_text :to_terminal
 
 version Crowdin::CLI::VERSION
 
 desc 'Be verbose'
 switch [:v, :verbose]
 
-desc 'Path to config file'
+desc 'Configuration file'
 default_value File.join(Dir.pwd, 'crowdin.yaml')
 arg_name '<s>'
 flag [:c, :config]
 
-desc 'Upload existing translations to Crowdin project'
-#arg_name 'Describe arguments to upload here'
+desc 'Allows you to upload source files and existing translations to Crowdin project'
+long_desc 'This command is used to upload source files and translations to Crowdin. This command is used in combination with sub-commands `sources` and `translations`.'
+
 command :upload do |c|
-  # Command 'upload' requires a subcommand
-  #
-  #c.action do |global_options, options, args|
-  #  puts "upload command ran"
-  #end
 
-  #c.default_command :all
+  c.desc 'safely upload source files to Crowdin'
+  c.long_desc <<EOS
+Upload source files to Crowdin project. If there are new localization files locally they will be added to Crowdin project.
+Othervice files will be updated (if no --no-auto-update option specified).
+EOS
 
-  #c.desc 'Upload source and translation files'
-  #c.command :all do |c|
-  #  c.action do |global_options, options, args|
-  #    puts options
-  #    puts "`upload all` command ran"
-  #  end
-  #end
-
-  c.desc 'Upload source files'
   c.command :sources do |c|
 
-    c.desc 'defines whether to add sources if there is the same file previously added'
-    c.switch [:ignore_duplicates]
+    c.desc 'Defines whether to update source files in Crowdin project. --no-auto-update is useful when you just want to upload new files without updating existing ones.'
+    c.switch ['auto-update']
 
     c.action do |global_options, options, args|
       project_info = @crowdin.project_info
@@ -206,7 +200,7 @@ command :upload do |c|
         @crowdin.add_directory(dir)
       end
 
-      unless options[:ignore_duplicates]
+      if options['auto-update'].nil? or options['auto-update']
         # Update existing files in Crowdin project
         #
         # array containing elements common to the two arrays
@@ -230,22 +224,29 @@ command :upload do |c|
     end # action
   end # command
 
-  c.desc 'Upload translation files'
+  c.desc 'upload existing translations to Crowdin project'
+  c.long_desc <<EOS
+Upload existing translations to Crowdin.
+See below available options that can be used in combination with this command.
+If no options specified uploaded translations will be not approved,
+imported to Crowdin project even if they are duplicated and imported even they are equal to souce string.
+(In many localization formats they can be considered as not actually translations).
+EOS
   c.command :translations do |c|
 
-    c.desc 'the language of translation you need'
+    c.desc 'Defines what language upload translations to. By default translations will be uploaded for all Crowdin project target languages'
     c.default_value 'all'
-    c.arg_name 'language_code'
+    c.arg_name 'crowdin_language_code'
     c.flag [:l, :language]
 
-    c.desc 'defines whether to add translation if there is the same translation previously added'
-    c.switch [:import_duplicates]
+    c.desc 'Defines whether to add translation if there is the same translation already existing in Crowdin project'
+    c.switch ['import-duplicates']
 
-    c.desc 'defines whether to add translation if it is equal to source string at Crowdin'
-    c.switch [:import_eq_suggestions]
+    c.desc 'Defines whether to add translation if it is equal to source string in Crowdin project'
+    c.switch ['import-eq-suggestions']
 
-    c.desc 'mark uploaded translations as approved'
-    c.switch [:auto_approve_imported]
+    c.desc 'Automatically approve uploaded translations'
+    c.switch ['auto-approve-imported']
 
 
     c.action do |global_options, options, args|
@@ -303,9 +304,9 @@ command :upload do |c|
       exit_now!("Nothing to upload") if dest_files.empty?
 
       params = {}
-      params[:import_duplicates]     = options[:import_dublicates]     ? 1 : 0
-      params[:import_eq_suggestions] = options[:import_eq_suggestions] ? 1 : 0
-      params[:auto_approve_imported] = options[:auto_approve_imported] ? 1 : 0
+      params[:import_duplicates]     = options['import-dublicates']     ? 1 : 0
+      params[:import_eq_suggestions] = options['import-eq-suggestions'] ? 1 : 0
+      params[:auto_approve_imported] = options['auto-approve-imported'] ? 1 : 0
 
       common_dir = find_common_directory_path(dest_files)
 
@@ -331,17 +332,17 @@ command :upload do |c|
 
 end
 
-desc 'Download existing translations'
+desc 'Download latest translations from Crowdin and put them to the right places in your project'
 #arg_name 'Describe arguments to download here'
 command :download do |c|
 
-  c.desc 'the language of translation you need'
+  c.desc 'If the option is defined the translations will be downloaded for single specified language. Othervice (by default) translations are downloaded for all languages'
   c.arg_name 'language_code'
   c.flag :l, :language, :default_value => 'all'
 
   c.action do |global_options ,options, args|
     # use export API method before to download the most recent translations
-    #@crowdin.export_translations
+    @crowdin.export_translations
 
     language = options[:language]
     project_info = @crowdin.project_info
@@ -417,9 +418,41 @@ pre do |global ,command, options, args|
   # Use skips_pre before a command to skip this block
   # on that command only
 
-  @config = YAML.load_file(global[:config])
+  if File.exists?(global[:config])
+    @config = YAML.load_file(global[:config])
 
-  #@base_path = @config['base_path'] || Dir.pwd
+    ['api_key', 'project_identifier'].each do |key|
+      unless @config[key]
+        exit_now! <<EOS
+Configuration file misses required option `#{key}`
+
+See http://crowdin.net/page/cli-client#configuration-file for more details
+EOS
+      end
+    end
+
+    unless @config['files']
+      exit_now! <<EOS
+Configuration file misses required section `files`
+
+See http://crowdin.net/page/cli-client#configuration-file for more details
+EOS
+    end
+
+  else
+    exit_now! <<EOS
+Can't find configuration file (default `crowdin.yml').
+Type `crowdin-cli help` to know how to specify custom configuration file
+
+See http://crowdin.net/page/cli-client#configuration-file for more details
+EOS
+  end
+
+  @config['files'].each do |file|
+    file['source'] = '/' + file['source'] unless file['source'].start_with?('/')
+    file['translation'] = '/' + file['translation'] unless file['translation'].start_with?('/')
+  end
+
   if @config['base_path']
     if @config['base_path'].start_with?('/')
       @base_path = @config['base_path']
@@ -433,7 +466,7 @@ pre do |global ,command, options, args|
   Crowdin::API.log = Logger.new($stderr) if global[:v]
   @crowdin = Crowdin::API.new(api_key: @config['api_key'], project_id: @config['project_identifier'], base_url: @config['base_url'] || 'http://api.crowdin.net')
 
-  puts "Executing #{command.name}" if global[:v]
+  #puts "Executing #{command.name}" if global[:v]
   true
 end
 
@@ -441,7 +474,7 @@ post do |global, command, options, args|
   # Post logic here
   # Use skips_post before a command to skip this
   # block on that command only
-  puts "Executed #{command.name}" if global[:v]
+  #puts "Executed #{command.name}" if global[:v]
 end
 
 on_error do |exception|
