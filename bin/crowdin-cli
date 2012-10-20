@@ -431,7 +431,7 @@ pre do |global ,command, options, args|
   end
 
   Crowdin::API.log = Logger.new($stderr) if global[:v]
-  @crowdin = Crowdin::API.new(api_key: @config['api_key'], project_id: @config['project_id'], base_url: @config['base_url'] || 'http://api.crowdin.net')
+  @crowdin = Crowdin::API.new(api_key: @config['api_key'], project_id: @config['project_identifier'], base_url: @config['base_url'] || 'http://api.crowdin.net')
 
   puts "Executing #{command.name}" if global[:v]
   true

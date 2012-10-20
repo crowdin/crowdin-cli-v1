@@ -32,7 +32,7 @@ Create a `crowdin.yaml` YAML file in your root project directory with the follow
 
 ```
 ---
-project_id: test
+project_idenfier: test
 api_key: KeepTheAPIkeySecret
 base_url: http://api.crowdin.net
 base_path: /path/to/your/project
@@ -44,7 +44,7 @@ files:
 ```
 
 * `api_key` - Crowdin Project API key
-* `project_id` - Crowdin project name
+* `project_identifier` - Crowdin project name
 * `base_url` - (default: http://api.crowdin.net)
 * `base_path` - defines what directory we have to scan(default: current directory)
 * `files`
@@ -77,7 +77,7 @@ Also you can add and upload all directories mathing the pattern including all ne
 Create a `crowdin.yaml` YAML file in your root project directory with the following structure:
 ```
 ---
-project_id: test
+project_identifier: test
 api_key: KeepTheAPIkeySecret
 base_url: http://api.crowdin.net
 base_path: /path/to/your/project
@@ -92,7 +92,7 @@ Languages mapping.
 
 ```
 ---
-project_id: test
+project_identifier: test
 api_key: KeepTheAPIkeySecret
 base_url: http://api.crowdin.net
 base_path: /path/to/your/project
