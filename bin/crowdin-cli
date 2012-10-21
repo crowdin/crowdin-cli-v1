@@ -70,7 +70,7 @@ def export_pattern_to_path(path, export_pattern, lang, languages_mapping = nil)
   unless languages_mapping.nil?
     pattern = Hash[pattern.map{|k, str| [
       k,
-      (languages_mapping[k[/%(.*)%/, 1]][str] rescue nil) || str]
+      (languages_mapping[k[/%(.*)%/, 1]][lang['crowdin_code']] rescue nil) || str]
     }]
   end
 
@@ -119,12 +119,12 @@ end
 ###
 include GLI::App
 
+version Crowdin::CLI::VERSION
+
 program_desc 'is a command line tool that allows you to manage and synchronize your localization resources with Crowdin project'
 program_long_desc 'This tool requires configuration file to be created. See http://crowdin.net/page/cli-client for more details.'
 sort_help :manually # help commands are ordered in the order declared
 wrap_help_text :to_terminal
-
-version Crowdin::CLI::VERSION
 
 desc 'Be verbose'
 switch [:v, :verbose]

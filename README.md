@@ -50,7 +50,7 @@ files:
 * `files`
   * `source` - defines only files we will upload as sources
   * `translation` - attribute defines where translations should be placed after downloading (also we have to check those path to detect and upload existing translations)
-    
+
         Use the following placeholders to put appropriate variables into the resulting file name:
       * `%language%` - Language name (i.e. Ukrainian)
       * `%two_letters_code%` - Language code ISO 639-1 (i.e. uk)
@@ -103,6 +103,7 @@ files:
     translation: /locale/%two_letters_code%/**/%original_file_name%
     languages_mapping:
       two_letters_code:
+        # crowdin_language_code: local_name
         ru: ros
         uk: ukr
 ```
