@@ -468,6 +468,11 @@ EOS
 
   Crowdin::API.log = Logger.new($stderr) if global[:v]
   @crowdin = Crowdin::API.new(api_key: @config['api_key'], project_id: @config['project_identifier'], base_url: @config['base_url'] || 'http://api.crowdin.net')
+  begin
+    @crowdin.project_info
+  rescue
+    exit_now!("Seems Crowdin server API URL is not valid. Please check the `base_url` parameter in the configuration file.")
+  end
 
   #puts "Executing #{command.name}" if global[:v]
   true
