@@ -315,14 +315,15 @@ EOS
           file[:dest].sub!(common_dir, '')
           if remote_project_tree[:files].include?(file[:dest])
             if File.exist?(file[:source])
-              puts "Uploading #{file[:source].sub(@base_path, '')}"
+              print "Uploading `#{file[:source].sub(@base_path, '')}'"
               @crowdin.upload_translation([] << file, language, params)
+              puts "\rUploading `#{file[:source].sub(@base_path, '')}' - OK"
             else
-              puts "Local file #{file[:source]} not exists"
+              puts "Warning: Local file `#{file[:source]}' does not exists"
             end
           else
             # if source file not exist, don't upload translation
-            puts "Skip #{file[:source].sub(@base_path, '')}"
+            puts "Warning: Skip `#{file[:source].sub(@base_path, '')}'"
           end
         end
       end
