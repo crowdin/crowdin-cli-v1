@@ -89,6 +89,24 @@ def android_locale_code(locale_code)
   return locale_code.sub('-', '-r')
 end
 
+def invalid_placeholders(export_pattern)
+  valid_placeholders = [
+    '%language%',
+    '%two_letters_code%',
+    '%tree_letters_code%',
+    '%locale%',
+    '%locale_with_underscore%',
+    '%android_code%',
+    '%original_file_name%',
+    '%original_path%',
+    '%file_extension%',
+    '%file_name%'
+  ]
+
+  all_placeholders = export_pattern.scan(/%[a-z0-9_]*?%/)
+  invalid_placeholders = all_placeholders - valid_placeholders
+end
+
 # Return a string representing that part of the directory tree that is common to all the files
 #
 # @params [Array] paths set of strings representing directory paths
@@ -167,6 +185,10 @@ EOS
       dest_files = []
 
       @config['files'].each do |file|
+        invalid_placeholders(file['translation']).each do |placeholder|
+          puts "Warning: #{placeholder} is not valid variable supported by Crowdin. See http://crowdin.net/page/cli-client#configuration-file for more details."
+        end
+
         if File.exist?("#{@base_path}#{file['source']}")
           dest_files << file['source']
           local_files << { dest: file['source'], source: "#{@base_path}#{file['source']}", export_pattern: file['translation'] }
@@ -281,6 +303,10 @@ EOS
       dest_files = []
 
       @config['files'].each do |file|
+        invalid_placeholders(file['translation']).each do |placeholder|
+          puts "Warning: #{placeholder} is not valid variable supported by Crowdin. See http://crowdin.net/page/cli-client#configuration-file for more details."
+        end
+
         languages_mapping = file['languages_mapping']
 
         if File.exists?("#{@base_path}#{file['source']}")
