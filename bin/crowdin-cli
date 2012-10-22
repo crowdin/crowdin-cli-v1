@@ -67,14 +67,16 @@ def export_pattern_to_path(path, export_pattern, lang, languages_mapping = nil)
     '%file_name%'              => file_name,
   }
 
+  placeholders = pattern.inject([]){ |memo, h| memo << h.first[/%(.*)%/, 1] }
+
   unless languages_mapping.nil?
-    pattern = Hash[pattern.map{|k, str| [
-      k,
-      (languages_mapping[k[/%(.*)%/, 1]][lang['crowdin_code']] rescue nil) || str]
+    pattern = Hash[pattern.map{|placeholder, str| [
+      placeholder,
+      (languages_mapping[placeholder[/%(.*)%/, 1]][lang['crowdin_code']] rescue nil) || str]
     }]
   end
 
-  export_pattern.gsub(/%.+?%/, pattern)
+  export_pattern.gsub(/%(#{placeholders.join('|')})%/, pattern)
 end
 
 def android_locale_code(locale_code)
