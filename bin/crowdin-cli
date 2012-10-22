@@ -208,8 +208,13 @@ EOS
         files_for_upload = local_files.select{ |file| update_files.include?(file[:dest]) }
         files_for_upload.each do |file|
           print "Updating file `#{file[:dest]}'"
-          @crowdin.update_file([] << file)
-          puts "\rUpdating file `#{file[:dest]}' - OK"
+          resp = @crowdin.update_file([] << file)
+          case resp['files'].first[1]
+          when 'skipped'
+            puts "\rUpdating file `#{file[:dest]}' - Skipped"
+          when 'updated'
+            puts "\rUpdating file `#{file[:dest]}' - OK"
+          end
         end
       end
 
@@ -219,7 +224,7 @@ EOS
       files_for_add = local_files.select{ |file| add_files.include?(file[:dest]) }
       files_for_add.each do |file|
         print "Uploading file `#{file[:dest]}'"
-        @crowdin.add_file([] << file)
+        res = @crowdin.add_file([] << file)
         puts "\rUploading file `#{file[:dest]}' - OK"
       end
 
