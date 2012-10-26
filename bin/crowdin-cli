@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 
-require 'pp'
 require 'crowdin-cli'
 
 # Return +hierarchy+ of directories and files in Crowdin project
@@ -89,7 +88,7 @@ def android_locale_code(locale_code)
   return locale_code.sub('-', '-r')
 end
 
-def invalid_placeholders(export_pattern)
+def get_invalid_placeholders(export_pattern)
   valid_placeholders = [
     '%language%',
     '%two_letters_code%',
@@ -185,7 +184,7 @@ EOS
       dest_files = []
 
       @config['files'].each do |file|
-        invalid_placeholders(file['translation']).each do |placeholder|
+        get_invalid_placeholders(file['translation']).each do |placeholder|
           puts "Warning: #{placeholder} is not valid variable supported by Crowdin. See http://crowdin.net/page/cli-client#configuration-file for more details."
         end
 
@@ -303,7 +302,7 @@ EOS
       dest_files = []
 
       @config['files'].each do |file|
-        invalid_placeholders(file['translation']).each do |placeholder|
+        get_invalid_placeholders(file['translation']).each do |placeholder|
           puts "Warning: #{placeholder} is not valid variable supported by Crowdin. See http://crowdin.net/page/cli-client#configuration-file for more details."
         end
 
