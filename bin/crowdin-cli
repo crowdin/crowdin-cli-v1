@@ -476,7 +476,7 @@ EOS
 
   else
     exit_now! <<EOS
-Can't find configuration file (default `crowdin.yml').
+Can't find configuration file (default `crowdin.yaml').
 Type `crowdin-cli help` to know how to specify custom configuration file
 
 See http://crowdin.net/page/cli-client#configuration-file for more details
