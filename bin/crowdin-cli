@@ -56,7 +56,7 @@ def export_pattern_to_path(path, export_pattern, lang, languages_mapping = nil)
   pattern = {
     '%language%'               => lang['name'],
     '%two_letters_code%'       => lang['iso_639_1'],
-    '%tree_letters_code%'      => lang['iso_639_3'],
+    '%three_letters_code%'     => lang['iso_639_3'],
     '%locale%'                 => lang['locale'],
     '%locale_with_underscore%' => lang['locale'].gsub('-', '_'),
     '%android_code%'           => android_locale_code(lang['locale']),
@@ -92,7 +92,7 @@ def get_invalid_placeholders(export_pattern)
   valid_placeholders = [
     '%language%',
     '%two_letters_code%',
-    '%tree_letters_code%',
+    '%three_letters_code%',
     '%locale%',
     '%locale_with_underscore%',
     '%android_code%',
@@ -127,10 +127,13 @@ def unzip_file(zip, dest, files_list)
   Zip::ZipFile.open(zip) do |zip_file|
     zip_file.select{|f| f.file?}.each do |f|
       file = files_list[f.name]
-      f_path = File.join(dest, file)
-      FileUtils.mkdir_p(File.dirname(f_path))
-      puts "Download: #{file}"
-      zip_file.extract(f, f_path)
+      # TODO if file in archive not match pattern
+      if file
+        f_path = File.join(dest, file)
+        FileUtils.mkdir_p(File.dirname(f_path))
+        puts "Download: #{file}"
+        zip_file.extract(f, f_path)
+      end
     end
   end
 end
@@ -435,9 +438,10 @@ command :download do |c|
 
     ##
     file = Tempfile.new(language)
+    path = file.path
     begin
-      @crowdin.download_translation(language, :output => file)
-      unzip_file(file, @base_path, downloadable_files)
+      @crowdin.download_translation(language, :output => path)
+      unzip_file(path, @base_path, downloadable_files)
     ensure
       file.close
       file.unlink # delete the temp file
@@ -484,7 +488,6 @@ EOS
   end
 
   @config['files'].each do |file|
-    # TODO валідація на наявність і перетворення слешів для Віндоуз
     file['source'] = '/' + file['source'] unless file['source'].start_with?('/')
     file['translation'] = '/' + file['translation'] unless file['translation'].start_with?('/')
   end
