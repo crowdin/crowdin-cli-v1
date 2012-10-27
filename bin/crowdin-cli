@@ -408,7 +408,7 @@ command :download do |c|
         dest = file['source'].sub("#{@base_path}", '')
 
         translation_languages.each do |lang|
-          zipper_file = export_pattern_to_path(dest, file['translation'], lang)
+          zipped_file = export_pattern_to_path(dest, file['translation'], lang)
           local_file  = export_pattern_to_path(dest, file['translation'], lang, languages_mapping)
 
           downloadable_files[zipped_file] = local_file
@@ -484,6 +484,7 @@ EOS
   end
 
   @config['files'].each do |file|
+    # TODO валідація на наявність і перетворення слешів для Віндоуз
     file['source'] = '/' + file['source'] unless file['source'].start_with?('/')
     file['translation'] = '/' + file['translation'] unless file['translation'].start_with?('/')
   end
