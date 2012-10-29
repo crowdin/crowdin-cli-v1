@@ -125,7 +125,7 @@ def unzip_file(zip, dest, files_list)
   Zip.options[:on_exists_proc] = true
 
   Zip::ZipFile.open(zip) do |zip_file|
-    zip_file.select{|f| f.file?}.each do |f|
+    zip_file.select{ |f| f.file? }.each do |f|
       file = files_list[f.name]
       # TODO if file in archive not match pattern
       if file
@@ -133,6 +133,8 @@ def unzip_file(zip, dest, files_list)
         FileUtils.mkdir_p(File.dirname(f_path))
         puts "Download: #{file}"
         zip_file.extract(f, f_path)
+      else
+        puts "Warning: Downloaded translations `#{f}' does not match current project configuration. Crowdin has internal caching mechanisms that prevents us from overload. Please try to download translations later"
       end
     end
   end
