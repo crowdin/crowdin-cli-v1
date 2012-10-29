@@ -124,19 +124,26 @@ def unzip_file(zip, dest, files_list)
   # overwrite files if they already exist inside of the extracted path
   Zip.options[:on_exists_proc] = true
 
+  unmatched_files = []
+
   Zip::ZipFile.open(zip) do |zip_file|
     zip_file.select{ |f| f.file? }.each do |f|
       file = files_list[f.name]
-      # TODO if file in archive not match pattern
       if file
         f_path = File.join(dest, file)
         FileUtils.mkdir_p(File.dirname(f_path))
         puts "Download: #{file}"
         zip_file.extract(f, f_path)
       else
-        puts "Warning: Downloaded translations `#{f}' does not match current project configuration. Crowdin has internal caching mechanisms that prevents us from overload. Please try to download translations later"
+        unmatched_files << f
       end
     end
+  end
+
+  unless unmatched_files.empty?
+    puts "Warning: Downloaded translations does not match current project configuration. Some of the resulted files will be omitted."
+    unmatched_files.each{ |file| puts " - `#{file}'" }
+    puts "Crowdin has internal caching mechanisms that prevents us from overload. Please try to download translations later."
   end
 end
 
