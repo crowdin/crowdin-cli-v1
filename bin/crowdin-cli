@@ -207,7 +207,9 @@ EOS
         end
       end
 
-      exit_now!("Nothing to upload") if local_files.empty?
+      if local_files.empty?
+        exit_now!("Warning: nothing to upload. See http://crowdin.net/page/cli-client#configuration-file for more details.")
+      end
 
       common_dir = find_common_directory_path(dest_files)
 
@@ -313,7 +315,7 @@ EOS
           dest_files << dest
 
           translation_languages.each do |lang|
-            source = export_pattern_to_path(dest, file['translation'], lang)
+            source = export_pattern_to_path(dest, file['translation'], lang, languages_mapping)
             translated_files[lang['crowdin_code']] << { source: "#{@base_path}#{source}", dest: dest }
           end
         else
@@ -335,7 +337,9 @@ EOS
         end # if
       end # @config['files']
 
-      exit_now!("Nothing to upload") if dest_files.empty?
+      if dest_files.empty?
+        exit_now!("Warning: nothing to upload. See http://crowdin.net/page/cli-client#configuration-file for more details.")
+      end
 
       params = {}
       params[:import_duplicates]     = options['import-dublicates']     ? 1 : 0
