@@ -99,7 +99,7 @@ def get_invalid_placeholders(export_pattern)
     '%original_file_name%',
     '%original_path%',
     '%file_extension%',
-    '%file_name%'
+    '%file_name%',
   ]
 
   all_placeholders = export_pattern.scan(/%[a-z0-9_]*?%/)
@@ -216,10 +216,10 @@ EOS
             local_files << { dest: dest, source: source, export_pattern: export_pattern }
           end
 
-        end
-      end
+        end # if
+      end # @config['files']
 
-      if local_files.empty?
+      if dest_files.empty?
         exit_now!("Warning: nothing to upload. See http://crowdin.net/page/cli-client#configuration-file for more details.")
       end
 
@@ -294,6 +294,11 @@ EOS
 
 
     c.action do |global_options, options, args|
+      params = {}
+      params[:import_duplicates]     = options['import-dublicates']     ? 1 : 0
+      params[:import_eq_suggestions] = options['import-eq-suggestions'] ? 1 : 0
+      params[:auto_approve_imported] = options['auto-approve-imported'] ? 1 : 0
+
       language = options[:language]
 
       project_info = @crowdin.project_info
@@ -353,16 +358,12 @@ EOS
         exit_now!("Warning: nothing to upload. See http://crowdin.net/page/cli-client#configuration-file for more details.")
       end
 
-      params = {}
-      params[:import_duplicates]     = options['import-dublicates']     ? 1 : 0
-      params[:import_eq_suggestions] = options['import-eq-suggestions'] ? 1 : 0
-      params[:auto_approve_imported] = options['auto-approve-imported'] ? 1 : 0
-
       common_dir = find_common_directory_path(dest_files)
 
       translated_files.each do |language, files|
         files.each do |file|
           file[:dest].sub!(common_dir, '')
+
           if remote_project_tree[:files].include?(file[:dest])
             if File.exist?(file[:source])
               print "Uploading `#{file[:source].sub(@base_path, '')}'"
@@ -375,6 +376,7 @@ EOS
             # if source file not exist, don't upload translation
             puts "Warning: Skip `#{file[:source].sub(@base_path, '')}'"
           end
+
         end
       end
 
