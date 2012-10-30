@@ -1,5 +1,9 @@
 # Crowdin-CLI
 
+[Crowdin Integration Utility Homepage](http://crowdin.net/page/cli-tool) | 
+[Support](http://crowdin.net/contacts) | 
+[Crowdin.net Homepage](http://crowdin.net)
+
 A Command-Line Interface to sync files between your computer/server and [Crowdin](crowdin.net).
 
 It is cross-platform and runs in a terminal (Linux, MacOS X) or in cmd.exe (Windows).
