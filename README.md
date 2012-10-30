@@ -107,8 +107,40 @@ files:
         ru: ros
         uk: ukr
 ```
+See Also: all available [Crowdin Language Codes](http://crowdin.net/page/api/language-codes)
 
 ## Usage
+
+When the configuration file is created you are ready to start using `crowdin-cli` to manage your localization resources and automate files synchronization. 
+
+We listed most typical commands that crowdin-cli is used for:
+
+Upload your source files to Crowdin:
+```
+$ crowdin-cli upload sources
+```
+
+Upload existing translations to Crowdin project (translations will be synchronized):
+```
+$ crowdin-cli upload translations
+```
+
+Download latest translations from Crowdin:
+```
+$ crowdin-cli download
+```
+
+Get help on `upload` command:
+```
+$ crowdin-cli help upload
+```
+
+Get help on `upload sources` command:
+```
+$ crowdin-cli help upload sources
+```
+
+Use help provided with an application to get more information about available commands and options:
 
 
 ## Supported Rubies
