@@ -2,7 +2,8 @@
 
 [Crowdin Integration Utility Homepage](http://crowdin.net/page/cli-tool) | 
 [Support](http://crowdin.net/contacts) | 
-[Crowdin.net Homepage](http://crowdin.net)
+[Crowdin.net Homepage](http://crowdin.net) | 
+[crowdin-api RubyDoc](http://rubydoc.info/github/crowdin/crowdin-api/)
 
 A Command-Line Interface to sync files between your computer/server and [Crowdin](crowdin.net).
 
