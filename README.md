@@ -74,7 +74,21 @@ files:
 
 Also you can add and upload all directories mathing the pattern including all nested files and localizable files.
 
-Create a `crowdin.yaml` YAML file in your root project directory with the following structure:
+Example configuration provided above has 'source' and 'translation' attributes containing standard wildcards (also known as globbing patterns) to make it easier to work with multiple files. 
+
+Here's patterns you can use: 
+
+* `*` (asterisk)
+
+ This wildcard represents any character in file or directory name. If you specified a `*.json` it will include all files like `messages.json`, `about_us.json` and anything that ends with `.json`. 
+
+* `**` (doubled asterisk)
+
+ Matches any string recursively (including sub-directories). Note that you can use `**` in `source` and in `translation` pattern. When using `**` in `translation` pattern it will always contain sub-path from `source` for certain file.
+
+ Say, you can have source: `/en/**/*.po` to upload all `*.po` files to Crowdin recursively. `translation` pattern will be `/%two_letters_code%/**/%original_file_name%'`.
+
+See sample configuration below::
 ```
 ---
 project_identifier: test
@@ -88,7 +102,11 @@ files:
     translation: /locale/%two_letters_code%/**/%original_file_name%
 ```
 
-Languages mapping.
+### Languages mapping
+
+Often software projects have custom names for locale directories. `crowdin-cli` allows you to map your own languages to understandable by Crowdin. 
+
+Let's say your locale directories named 'en', 'uk', 'fr', 'de'. All of them can be represented by `%two_letters_code%` placeholder. Still, you have one directory named 'zh_CH'. In order to make it work with `crowdin-cli` without changes in your project you can add `languages_mapping` section to your files set. See sample configuration below:
 
 ```
 ---
@@ -107,7 +125,54 @@ files:
         ru: ros
         uk: ukr
 ```
-See Also: all available [Crowdin Language Codes](http://crowdin.net/page/api/language-codes)
+Mapping format is the following: `crowdin_language_code : code_use_use`.
+
+Check [complete list of Crowdin language codes](http://crowdin.net/page/api/language-codes) that can be used for mapping. 
+
+You can also override language codes for other placeholders like `%android_code%`, `%locale%` etc...
+
+## Example Configurations
+
+### GetText Project
+
+```
+---
+project_identifier: test
+api_key: KeepTheAPIkeySecret
+base_url: http://api.crowdin.net
+base_path: /path/to/your/project
+
+files:
+  -
+    source: '/locale/en/**/*.po'
+    translation: '/locale/%two_letters_code%/LC_MESSAGES/%original_file_name%'
+    languages_mapping:
+      two_letters_code:
+        'zh-CN': 'zh_CH'
+        'fr-QC': 'fr'
+```
+
+### Android Project
+
+```
+---
+project_identifier: test
+api_key: KeepTheAPIkeySecret
+base_url: http://api.crowdin.net
+base_path: /path/to/your/project
+
+files:
+  - 
+   source: '/res/values/*.xml'
+   translation: '/res/values-%android_code%/%original_file_name%'
+   languages_mapping:
+     android_code:
+       # we need this mapping since Crowdin expects directories
+       # to be named like "values-uk-rUA"
+       # acording to specification instead of just "uk"
+       de: de 
+       ru: ru
+```
 
 ## Usage
 
