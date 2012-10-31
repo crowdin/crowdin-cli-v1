@@ -230,6 +230,10 @@ Tested with the following Ruby versions:
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create new Pull Request
 
-## License
+## License and Author
+
+Author: Anton Maminov (anton.maminov@gmail.com)
+
+Copyright: 2012 [Crowdin.net](http://crowdin.net/)
 
 This library is distributed under the MIT license.  Please see the LICENSE file.
