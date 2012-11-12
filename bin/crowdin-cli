@@ -508,17 +508,11 @@ EOS
   end
 
   if @config['base_path']
-    if @config['base_path'].start_with?('/')
-      @base_path = @config['base_path']
-    else
-      @base_path = Dir.pwd + '/' + @config['base_path']
-    end
+    @base_path = @config['base_path']
   else
     @base_path = Dir.pwd
     puts <<EOS
-Warning: Configuration file misses optional section `base_path`.
-Set the working directory - `#{@base_path}`
-
+Warning: Configuration misses parameter `base_path` that defines your project root directory. Using `#{@base_path}` as a root directory.
 EOS
   end
 
