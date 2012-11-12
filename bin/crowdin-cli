@@ -515,12 +515,19 @@ EOS
     end
   else
     @base_path = Dir.pwd
+    puts <<EOS
+Warning: Configuration file misses optional section `base_path`.
+Set the working directory - `#{@base_path}`
+
+EOS
   end
 
   Crowdin::API.log = Logger.new($stderr) if global[:v]
   @crowdin = Crowdin::API.new(api_key: @config['api_key'], project_id: @config['project_identifier'], base_url: @config['base_url'] || 'http://api.crowdin.net')
   begin
     @crowdin.project_info
+  rescue Crowdin::API::Errors::Error => err
+    raise err
   rescue
     exit_now!("Seems Crowdin server API URL is not valid. Please check the `base_url` parameter in the configuration file.")
   end
