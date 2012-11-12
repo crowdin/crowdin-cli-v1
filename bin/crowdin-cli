@@ -220,7 +220,7 @@ EOS
       end # @config['files']
 
       if dest_files.empty?
-        exit_now!("Warning: nothing to upload. See http://crowdin.net/page/cli-client#configuration-file for more details.")
+        exit_now!("nothing to upload. See http://crowdin.net/page/cli-client#configuration-file for more details.")
       end
 
       common_dir = find_common_directory_path(dest_files)
@@ -512,7 +512,7 @@ EOS
   else
     @base_path = Dir.pwd
     puts <<EOS
-Warning: Configuration misses parameter `base_path` that defines your project root directory. Using `#{@base_path}` as a root directory.
+Warning: Configuration file misses parameter `base_path` that defines your project root directory. Using `#{@base_path}` as a root directory.
 EOS
   end
 
