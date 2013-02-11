@@ -2,6 +2,8 @@
 
 require 'crowdin-cli'
 
+# GLI_DEBUG=true bundle exec bin/crowdin-cli
+
 # Return +hierarchy+ of directories and files in Crowdin project
 #
 # +files+ - basically, it's project files details from API method `project_info`
@@ -202,7 +204,7 @@ EOS
 
         if File.exist?("#{@base_path}#{file['source']}")
           dest_files << file['source']
-          local_files << { dest: file['source'], source: "#{@base_path}#{file['source']}", export_pattern: file['translation'] }
+          local_file = { dest: file['source'], source: "#{@base_path}#{file['source']}", export_pattern: file['translation'] }
         else
           Dir.glob("#{@base_path}#{file['source']}").each do |source|
             dest = source.sub("#{@base_path}", '') # relative path in Crowdin
@@ -213,10 +215,16 @@ EOS
             diff = (dest.split('/') - file_pattern.split('/')).join('/')
             export_pattern = file['translation'].sub('**', diff)
 
-            local_files << { dest: dest, source: source, export_pattern: export_pattern }
+            local_file = { dest: dest, source: source, export_pattern: export_pattern }
           end
 
         end # if
+
+        # Used only when uploading CSV file to define data columns mapping.
+        local_file.merge!({ sheme: file['scheme'] }) if file.has_key?('scheme')
+        local_file.merge!({ first_line_contains_header: file['first_line_contains_header'] }) if file.has_key?('first_line_contains_header')
+
+        local_files << local_file
       end # @config['files']
 
       if dest_files.empty?
@@ -245,7 +253,12 @@ EOS
         files_for_upload = local_files.select{ |file| update_files.include?(file[:dest]) }
         files_for_upload.each do |file|
           print "Updating file `#{file[:dest]}'"
-          resp = @crowdin.update_file([] << file)
+
+          params = {}
+          params[:scheme] = file.delete(:sheme)
+          params[:first_line_contains_header] = file.delete(:first_line_contains_header)
+
+          resp = @crowdin.update_file([] << file, params)
           case resp['files'].first[1]
           when 'skipped'
             puts "\rUpdating file `#{file[:dest]}' - Skipped"
@@ -261,7 +274,12 @@ EOS
       files_for_add = local_files.select{ |file| add_files.include?(file[:dest]) }
       files_for_add.each do |file|
         print "Uploading file `#{file[:dest]}'"
-        res = @crowdin.add_file([] << file)
+
+        params = {}
+        params[:scheme] = file.delete(:sheme)
+        params[:first_line_contains_header] = file.delete(:first_line_contains_header)
+
+        resp = @crowdin.add_file([] << file, params)
         puts "\rUploading file `#{file[:dest]}' - OK"
       end
 
