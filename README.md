@@ -83,7 +83,7 @@ Also you can add and upload all directories mathing the pattern including all ne
 
 Example configuration provided above has 'source' and 'translation' attributes containing standard wildcards (also known as globbing patterns) to make it easier to work with multiple files. 
 
-Here's patterns you can use: 
+Here's patterns you can use:
 
 * `*` (asterisk)
 
@@ -134,7 +134,7 @@ files:
 ```
 Mapping format is the following: `crowdin_language_code : code_use_use`.
 
-Check [complete list of Crowdin language codes](http://crowdin.net/page/api/language-codes) that can be used for mapping. 
+Check [complete list of Crowdin language codes](http://crowdin.net/page/api/language-codes) that can be used for mapping.
 
 You can also override language codes for other placeholders like `%android_code%`, `%locale%` etc...
 
@@ -169,7 +169,7 @@ base_url: http://api.crowdin.net
 base_path: /path/to/your/project
 
 files:
-  - 
+  -
    source: '/res/values/*.xml'
    translation: '/res/values-%android_code%/%original_file_name%'
    languages_mapping:
@@ -177,8 +177,27 @@ files:
        # we need this mapping since Crowdin expects directories
        # to be named like "values-uk-rUA"
        # acording to specification instead of just "uk"
-       de: de 
+       de: de
        ru: ru
+```
+
+### Uploading CSV files via API
+
+```
+---
+project_identifier: test
+api_key: KeepTheAPIkeySecret
+base_url: http://api.crowdin.net
+base_path: /path/to/your/project
+
+files:
+  -
+   source: '/*.csv'
+   translation: '%two_letters_code%/%original_file_name%'
+   # Defines whether first line should be imported or it contains columns headers
+   first_line_contains_header: true
+   # Used only when uploading CSV file to define data columns mapping.
+   scheme: "identifier,source_phrase,translation,context,max_length"
 ```
 
 ## Usage
@@ -234,6 +253,6 @@ Tested with the following Ruby versions:
 
 Author: Anton Maminov (anton.maminov@gmail.com)
 
-Copyright: 2012 [Crowdin.net](http://crowdin.net/)
+Copyright: 2012-2013 [Crowdin.net](http://crowdin.net/)
 
 This library is distributed under the MIT license.  Please see the LICENSE file.
