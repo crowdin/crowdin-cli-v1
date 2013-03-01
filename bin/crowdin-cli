@@ -393,7 +393,7 @@ EOS
               case resp['files'].first[1]
               when 'skipped'
                 puts "\rUploading `#{file[:source].sub(@base_path, '')}' - Skipped"
-              when 'updated'
+              when 'uploaded'
                 puts "\rUploading `#{file[:source].sub(@base_path, '')}' - OK"
               end
             else
