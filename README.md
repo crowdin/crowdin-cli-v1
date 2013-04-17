@@ -87,13 +87,13 @@ Here's patterns you can use:
 
 * `*` (asterisk)
 
- This wildcard represents any character in file or directory name. If you specified a `*.json` it will include all files like `messages.json`, `about_us.json` and anything that ends with `.json`. 
+ Match zero or more characters in file name. A glob consisting of only the asterisk and no other characters will match all files in the directory. If you specified a `*.json` it will include all files like `messages.json`, `about_us.json` and anything that ends with `.json`. 
 
 * `**` (doubled asterisk)
 
- Matches any string recursively (including sub-directories). Note that you can use `**` in `source` and in `translation` pattern. When using `**` in `translation` pattern it will always contain sub-path from `source` for certain file.
+ Match all directories recursively. Note that you can use `**` in `source` and in `translation` pattern. When using `**` in `translation` pattern it will always contain sub-path from `source` for certain file.
 
- Say, you can have source: `/en/**/*.po` to upload all `*.po` files to Crowdin recursively. `translation` pattern will be `/%two_letters_code%/**/%original_file_name%'`.
+ Say, you can have source: `/en/**/*.po` to upload all `*.po` files to Crowdin recursively. `translation` pattern will be `/translations/%two_letters_code%/**/%original_file_name%'`.
 
 See sample configuration below::
 ```

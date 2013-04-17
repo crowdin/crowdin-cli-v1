@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 
+require 'pp'
 require 'crowdin-cli'
 
 # GLI_DEBUG=true bundle exec bin/crowdin-cli
@@ -155,7 +156,7 @@ include GLI::App
 version Crowdin::CLI::VERSION
 
 program_desc 'is a command line tool that allows you to manage and synchronize your localization resources with Crowdin project'
-program_long_desc 'This tool requires configuration file to be created. See http://crowdin.net/page/cli-client for more details.'
+program_long_desc 'This tool requires configuration file to be created. See http://crowdin.net/page/cli-tool#configuration-file for more details.'
 sort_help :manually # help commands are ordered in the order declared
 wrap_help_text :to_terminal
 
@@ -199,7 +200,7 @@ EOS
 
       @config['files'].each do |file|
         get_invalid_placeholders(file['translation']).each do |placeholder|
-          puts "Warning: #{placeholder} is not valid variable supported by Crowdin. See http://crowdin.net/page/cli-client#configuration-file for more details."
+          puts "Warning: #{placeholder} is not valid variable supported by Crowdin. See http://crowdin.net/page/cli-tool#configuration-file for more details."
         end
 
         if File.exist?("#{@base_path}#{file['source']}")
@@ -218,8 +219,9 @@ EOS
 
             file_pattern = export_pattern_to_path(dest, file['translation'], source_language)
 
-            diff = (dest.split('/') - file_pattern.split('/')).join('/')
+            diff = (dest.split('/') - file['source'].split('/')).join('/')
             export_pattern = file['translation'].sub('**', diff)
+            export_pattern = export_pattern.split('/').reject(&:empty?).join('/')
 
             local_file = { dest: dest, source: source, export_pattern: export_pattern }
             local_file.merge!({ sheme: file['scheme'] }) if file.has_key?('scheme')
@@ -231,7 +233,7 @@ EOS
       end # @config['files']
 
       if dest_files.empty?
-        exit_now!("nothing to upload. See http://crowdin.net/page/cli-client#configuration-file for more details.")
+        exit_now!("nothing to upload. See http://crowdin.net/page/cli-tool#configuration-file for more details.")
       end
 
       common_dir = find_common_directory_path(dest_files)
@@ -313,7 +315,6 @@ EOS
     c.desc 'Automatically approve uploaded translations'
     c.switch ['auto-approve-imported']
 
-
     c.action do |global_options, options, args|
       params = {}
       params[:import_duplicates]     = options['import-dublicates']     ? 1 : 0
@@ -343,7 +344,7 @@ EOS
 
       @config['files'].each do |file|
         get_invalid_placeholders(file['translation']).each do |placeholder|
-          puts "Warning: #{placeholder} is not valid variable supported by Crowdin. See http://crowdin.net/page/cli-client#configuration-file for more details."
+          puts "Warning: #{placeholder} is not valid variable supported by Crowdin. See http://crowdin.net/page/cli-tool#configuration-file for more details."
         end
 
         languages_mapping = file['languages_mapping']
@@ -359,11 +360,12 @@ EOS
         else
           Dir.glob("#{@base_path}#{file['source']}").each do |source|
             dest = source.sub("#{@base_path}", '') # relative path in Crowdin
+            puts dest
             dest_files << dest
 
             file_pattern = export_pattern_to_path(dest, file['translation'], source_language)
 
-            diff = (dest.split('/') - file_pattern.split('/')).join('/')
+            diff = (dest.split('/') - file['source'].split('/')).join('/')
             export_pattern = file['translation'].sub('**', diff) # !!!
 
             translation_languages.each do |lang|
@@ -376,7 +378,7 @@ EOS
       end # @config['files']
 
       if dest_files.empty?
-        exit_now!("Warning: nothing to upload. See http://crowdin.net/page/cli-client#configuration-file for more details.")
+        exit_now!("Warning: nothing to upload. See http://crowdin.net/page/cli-tool#configuration-file for more details.")
       end
 
       common_dir = find_common_directory_path(dest_files)
@@ -464,7 +466,8 @@ command :download do |c|
 
           file_pattern = export_pattern_to_path(dest, file['translation'], source_language)
 
-          diff = (dest.split('/') - file_pattern.split('/')).join('/')
+
+          diff = (dest.split('/') - file['source'].split('/')).join('/')
           export_pattern = file['translation'].sub('**', diff)
 
           translation_languages.each do |lang|
@@ -507,7 +510,7 @@ pre do |global ,command, options, args|
         exit_now! <<EOS
 Configuration file misses required option `#{key}`
 
-See http://crowdin.net/page/cli-client#configuration-file for more details
+See http://crowdin.net/page/cli-tool#configuration-file for more details
 EOS
       end
     end
@@ -516,7 +519,7 @@ EOS
       exit_now! <<EOS
 Configuration file misses required section `files`
 
-See http://crowdin.net/page/cli-client#configuration-file for more details
+See http://crowdin.net/page/cli-tool#configuration-file for more details
 EOS
     end
 
@@ -530,6 +533,7 @@ EOS
   end
 
   @config['files'].each do |file|
+    #TODO check two asterisk
     file['source'] = '/' + file['source'] unless file['source'].start_with?('/')
     file['translation'] = '/' + file['translation'] unless file['translation'].start_with?('/')
   end
