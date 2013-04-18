@@ -81,6 +81,49 @@ def export_pattern_to_path(path, export_pattern, lang, languages_mapping = nil)
   export_pattern.gsub(/%(#{placeholders.join('|')})%/, pattern)
 end
 
+# @param [String] path relative path to file in Crowdin project
+# @param [String] source basically, is a file['source'] from crowdin.yaml
+# @param [String] translation basically, is a file['translation'] from crowdin.yaml
+#
+def construct_export_pattern(path, source, translation)
+  pattern_regexp = translate_pattern_to_regexp(source)
+  if path.match(pattern_regexp)
+    double_asterisk = path.match(pattern_regexp)['double_asterisk']
+    translation = translation.sub('**', double_asterisk)
+  end
+
+  export_pattern = translation.split('/').reject(&:empty?).join('/').insert(0, '/')
+
+  return export_pattern
+end
+
+# Translate a glob pattern to a regular expression
+#
+def translate_pattern_to_regexp(pat)
+  i = 0
+  n = pat.size
+  res = ''
+  while i < n
+    c = pat[i]
+    i = i + 1
+    if c == '*'
+      j = i
+      if j < n and pat[j] == '*'
+        res << '(?<double_asterisk>.*)'
+        i = j + 1
+      else
+        res << '(.*)'
+      end
+    elsif c == '?'
+      res << '.'
+    else
+      res << Regexp.escape(c)
+    end
+  end
+
+  return Regexp.new(res)
+end
+
 def android_locale_code(locale_code)
   locale_code = case locale_code
     when 'he-IL' then 'iw-IL'
@@ -217,9 +260,7 @@ EOS
             dest = source.sub("#{@base_path}", '') # relative path in Crowdin
             dest_files << dest
 
-            diff = (dest.split('/') - file['source'].split('/')).join('/')
-            export_pattern = file['translation'].sub('**', diff)
-            export_pattern = export_pattern.split('/').reject(&:empty?).join('/')
+            export_pattern = construct_export_pattern(dest, file['source'], file['translation'])
 
             local_file = { dest: dest, source: source, export_pattern: export_pattern }
             local_file.merge!({ sheme: file['scheme'] }) if file.has_key?('scheme')
@@ -360,8 +401,7 @@ EOS
             dest = source.sub("#{@base_path}", '') # relative path in Crowdin
             dest_files << dest
 
-            diff = (dest.split('/') - file['source'].split('/')).join('/')
-            export_pattern = file['translation'].sub('**', diff) # !!!
+            export_pattern = construct_export_pattern(dest, file['source'], file['translation'])
 
             translation_languages.each do |lang|
               source = export_pattern_to_path(dest, export_pattern, lang, languages_mapping)
@@ -459,9 +499,8 @@ command :download do |c|
         Dir.glob("#{@base_path}#{file['source']}").each do |source|
           dest = source.sub("#{@base_path}", '') # relative path in Crowdin
 
-          diff = (dest.split('/') - file['source'].split('/')).join('/')
-          export_pattern = file['translation'].sub('**', diff)
-
+          export_pattern = construct_export_pattern(dest, file['source'], file['translation'])
+          
           translation_languages.each do |lang|
             zipped_file = export_pattern_to_path(dest, export_pattern, lang)
             local_file  = export_pattern_to_path(dest, export_pattern, lang, languages_mapping)
