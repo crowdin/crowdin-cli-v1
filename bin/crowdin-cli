@@ -217,8 +217,6 @@ EOS
             dest = source.sub("#{@base_path}", '') # relative path in Crowdin
             dest_files << dest
 
-            file_pattern = export_pattern_to_path(dest, file['translation'], source_language)
-
             diff = (dest.split('/') - file['source'].split('/')).join('/')
             export_pattern = file['translation'].sub('**', diff)
             export_pattern = export_pattern.split('/').reject(&:empty?).join('/')
@@ -360,10 +358,7 @@ EOS
         else
           Dir.glob("#{@base_path}#{file['source']}").each do |source|
             dest = source.sub("#{@base_path}", '') # relative path in Crowdin
-            puts dest
             dest_files << dest
-
-            file_pattern = export_pattern_to_path(dest, file['translation'], source_language)
 
             diff = (dest.split('/') - file['source'].split('/')).join('/')
             export_pattern = file['translation'].sub('**', diff) # !!!
@@ -463,9 +458,6 @@ command :download do |c|
       else
         Dir.glob("#{@base_path}#{file['source']}").each do |source|
           dest = source.sub("#{@base_path}", '') # relative path in Crowdin
-
-          file_pattern = export_pattern_to_path(dest, file['translation'], source_language)
-
 
           diff = (dest.split('/') - file['source'].split('/')).join('/')
           export_pattern = file['translation'].sub('**', diff)
