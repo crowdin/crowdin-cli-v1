@@ -564,9 +564,19 @@ EOS
   end
 
   @config['files'].each do |file|
-    #TODO check two asterisk
     file['source'] = '/' + file['source'] unless file['source'].start_with?('/')
     file['translation'] = '/' + file['translation'] unless file['translation'].start_with?('/')
+
+    if file['source'].scan('**').size > 1
+      exit_now! <<EOS
+Pattern `#{file['source']}` is not valid. The mask `**` can be used only once in the source pattern.
+EOS
+    elsif file['source'].scan('**').size == 1 and !file['source'].match(/\/\*\*\//)
+      exit_now! <<EOS
+Pattern `#{file['source']}` is not valid. The mask `**` must be surrounded by backslashes `/` in the source pattern.
+EOS
+    end
+
   end
 
   if @config['base_path']
