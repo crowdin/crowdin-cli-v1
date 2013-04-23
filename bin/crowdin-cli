@@ -256,7 +256,7 @@ EOS
 
           local_files << local_file
         else
-          Dir.glob("#{@base_path}#{file['source']}").each do |source|
+          Dir.glob("#{@base_path}#{file['source']}").select{ |fn| File.file?(fn) }.each do |source|
             dest = source.sub("#{@base_path}", '') # relative path in Crowdin
             dest_files << dest
 
@@ -397,7 +397,7 @@ EOS
             translated_files[lang['crowdin_code']] << { source: "#{@base_path}#{source}", dest: dest }
           end
         else
-          Dir.glob("#{@base_path}#{file['source']}").each do |source|
+          Dir.glob("#{@base_path}#{file['source']}").select{ |fn| File.file?(fn) }.each do |source|
             dest = source.sub("#{@base_path}", '') # relative path in Crowdin
             dest_files << dest
 
@@ -496,7 +496,7 @@ command :download do |c|
           downloadable_files[zipped_file] = local_file
         end
       else
-        Dir.glob("#{@base_path}#{file['source']}").each do |source|
+        Dir.glob("#{@base_path}#{file['source']}").select{ |fn| File.file?(fn) }.each do |source|
           dest = source.sub("#{@base_path}", '') # relative path in Crowdin
 
           export_pattern = construct_export_pattern(dest, file['source'], file['translation'])
