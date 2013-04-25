@@ -87,7 +87,7 @@ end
 #
 def construct_export_pattern(path, source, translation)
   pattern_regexp = translate_pattern_to_regexp(source)
-  if path.match(pattern_regexp)
+  if pattern_regexp.names.include?('double_asterisk') and path.match(pattern_regexp)
     double_asterisk = path.match(pattern_regexp)['double_asterisk']
     translation = translation.sub('**', double_asterisk)
   end
@@ -97,19 +97,22 @@ def construct_export_pattern(path, source, translation)
   return export_pattern
 end
 
-# Translate a glob pattern to a regular expression
+# Provides a partial implementation of translate a glob +pattern+ to a regular expression
+# NOTE:
+# `**` surrounded by backslashes `/` in the +pattern+
+# `**` used only once in the +pattern+
 #
-def translate_pattern_to_regexp(pat)
+def translate_pattern_to_regexp(pattern)
   i = 0
-  n = pat.size
+  n = pattern.size
   res = ''
   while i < n
-    c = pat[i]
+    c = pattern[i]
     i = i + 1
     if c == '*'
       j = i
-      if j < n and pat[j] == '*'
-        res << '(?<double_asterisk>.*)'
+      if j < n and pattern[j] == '*'
+        res[-1] = '(\/)?(?<double_asterisk>.*)?'
         i = j + 1
       else
         res << '(.*)'
@@ -275,7 +278,7 @@ EOS
         exit_now!("nothing to upload. See http://crowdin.net/page/cli-tool#configuration-file for more details.")
       end
 
-      common_dir = find_common_directory_path(dest_files)
+      common_dir = @preserve_hierarchy ? '' : find_common_directory_path(dest_files)
 
       local_project_tree = get_local_files_hierarchy(local_files.collect{ |h| h[:dest].sub(common_dir, '') })
 
@@ -296,7 +299,7 @@ EOS
         update_files = local_project_tree[:files] & remote_project_tree[:files]
         files_for_upload = local_files.select{ |file| update_files.include?(file[:dest]) }
         files_for_upload.each do |file|
-          print "Updating file `#{file[:dest]}'"
+          print "Updating source file `#{file[:dest]}'"
 
           params = {}
           params[:scheme] = file.delete(:sheme)
@@ -305,9 +308,9 @@ EOS
           resp = @crowdin.update_file([] << file, params)
           case resp['files'].first[1]
           when 'skipped'
-            puts "\rUpdating file `#{file[:dest]}' - Skipped"
+            puts "\rUpdating source file `#{file[:dest]}' - Skipped"
           when 'updated'
-            puts "\rUpdating file `#{file[:dest]}' - OK"
+            puts "\rUpdating source file `#{file[:dest]}' - OK"
           end
         end
       end
@@ -317,14 +320,14 @@ EOS
       add_files = local_project_tree[:files] - remote_project_tree[:files]
       files_for_add = local_files.select{ |file| add_files.include?(file[:dest]) }
       files_for_add.each do |file|
-        print "Uploading file `#{file[:dest]}'"
+        print "Uploading source file `#{file[:dest]}'"
 
         params = {}
         params[:scheme] = file.delete(:sheme)
         params[:first_line_contains_header] = file.delete(:first_line_contains_header)
 
         resp = @crowdin.add_file([] << file, params)
-        puts "\rUploading file `#{file[:dest]}' - OK"
+        puts "\rUploading source file `#{file[:dest]}' - OK"
       end
 
     end # action
@@ -416,7 +419,7 @@ EOS
         exit_now!("Warning: nothing to upload. See http://crowdin.net/page/cli-tool#configuration-file for more details.")
       end
 
-      common_dir = find_common_directory_path(dest_files)
+      common_dir = @preserve_hierarchy ? '' : find_common_directory_path(dest_files)
 
       translated_files.each do |language, files|
         files.each do |file|
@@ -424,14 +427,14 @@ EOS
 
           if remote_project_tree[:files].include?(file[:dest])
             if File.exist?(file[:source])
-              print "Uploading `#{file[:source].sub(@base_path, '')}'"
+              print "Uploading translation file `#{file[:source].sub(@base_path, '')}'"
 
               resp = @crowdin.upload_translation([] << file, language, params)
               case resp['files'].first[1]
               when 'skipped'
-                puts "\rUploading `#{file[:source].sub(@base_path, '')}' - Skipped"
+                puts "\rUploading translation `#{file[:source].sub(@base_path, '')}' - Skipped"
               when 'uploaded'
-                puts "\rUploading `#{file[:source].sub(@base_path, '')}' - OK"
+                puts "\rUploading translation `#{file[:source].sub(@base_path, '')}' - OK"
               end
             else
               puts "Warning: Local file `#{file[:source]}' does not exists"
@@ -559,7 +562,7 @@ EOS
 Can't find configuration file (default `crowdin.yaml').
 Type `crowdin-cli help` to know how to specify custom configuration file
 
-See http://crowdin.net/page/cli-client#configuration-file for more details
+See http://crowdin.net/page/cli-tool#configuration-file for more details
 EOS
   end
 
@@ -567,17 +570,26 @@ EOS
     file['source'] = '/' + file['source'] unless file['source'].start_with?('/')
     file['translation'] = '/' + file['translation'] unless file['translation'].start_with?('/')
 
-    if file['source'].scan('**').size > 1
-      exit_now! <<EOS
-Pattern `#{file['source']}` is not valid. The mask `**` can be used only once in the source pattern.
+    if file['source'].include?('**')
+      if file['source'].scan('**').size > 1
+        exit_now! <<EOS
+Source pattern `#{file['source']}` is not valid. The mask `**` can be used only once in the source pattern.
 EOS
-    elsif file['source'].scan('**').size == 1 and !file['source'].match(/\/\*\*\//)
-      exit_now! <<EOS
-Pattern `#{file['source']}` is not valid. The mask `**` must be surrounded by backslashes `/` in the source pattern.
+      elsif file['source'].scan('**').size == 1 and !file['source'].match(/\/\*\*\//)
+        exit_now! <<EOS
+Source pattern `#{file['source']}` is not valid. The mask `**` must be surrounded by backslashes `/` in the source pattern.
 EOS
+      end
+    else
+      if file['translation'].include?('**')
+        exit_now! <<EOS
+Translation pattern `#{file['translation']}` is not valid. The mask `**` can't be used.
+When using `**` in 'translation' pattern it will always contain sub-path from 'source' for certain file.
+EOS
+      end
     end
 
-  end
+  end # @config['files']
 
   if @config['base_path']
     @base_path = @config['base_path']
@@ -586,6 +598,20 @@ EOS
     puts <<EOS
 Warning: Configuration file misses parameter `base_path` that defines your project root directory. Using `#{@base_path}` as a root directory.
 EOS
+  end
+
+  @preserved_hierarchy = false
+  if @config['preserve_hierarchy']
+    @preserve_hierarchy = case @config['preserve_hierarchy']
+      when true
+        true
+      when false
+        false
+      else
+        exit_now! <<EOS
+Parameter `preserve_hierarchy` allows values of true or false.
+EOS
+    end
   end
 
   Crowdin::API.log = Logger.new($stderr) if global[:v]
