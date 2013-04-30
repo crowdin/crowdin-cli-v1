@@ -255,4 +255,4 @@ Author: Anton Maminov (anton.maminov@gmail.com)
 
 Copyright: 2012-2013 [Crowdin.net](http://crowdin.net/)
 
-This library is distributed under the MIT license.  Please see the LICENSE file.
+This project is licensed under the MIT license, a copy of which can be found in the LICENSE file.
