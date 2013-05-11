@@ -28,7 +28,7 @@ Gem::Specification.new do |gem|
   gem.add_runtime_dependency('gli', '>= 2.4.1')
   gem.add_runtime_dependency('rubyzip', '>= 0.9.9')
   gem.add_runtime_dependency('crowdin-api', '>= 0.0.11')
-  gem.add_runtime_dependency('r18n-core', '>= 1.1.4')
+  gem.add_runtime_dependency('i18n', '>= 0.6.4')
   gem.platform = Gem::Platform::RUBY
   gem.required_ruby_version = '>= 1.9.3'
 end

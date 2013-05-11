@@ -5,11 +5,10 @@ require 'crowdin-cli'
 
 # GLI_DEBUG=true bundle exec bin/crowdin-cli
 
-# Setup R18n
-dir = Pathname(__FILE__).dirname.expand_path
-R18n.default_places = dir + '../locales/'
-R18n.set('en')
-include R18n::Helpers
+# Setup i18n
+# tell the I18n library where to find your translations
+I18n.load_path += Dir[Pathname(__FILE__).dirname.expand_path + '../locales/*.yml']
+I18n.locale = :en
 
 # Return +hierarchy+ of directories and files in Crowdin project
 #
@@ -207,28 +206,28 @@ include GLI::App
 
 version Crowdin::CLI::VERSION
 
-program_desc t.app[:desc]
-program_long_desc t.app[:long_desc]
+program_desc I18n.t('app.desc')
+program_long_desc I18n.t('app.long_desc')
 sort_help :manually # help commands are ordered in the order declared
 wrap_help_text :to_terminal
 
-desc t.app[:switches][:verbose][:desc]
+desc I18n.t('app.switches.verbose.desc')
 switch [:v, :verbose]
 
-desc t.app[:flags][:config][:desc]
+desc I18n.t('app.flags.config.desc')
 default_value File.join(Dir.pwd, 'crowdin.yaml')
 arg_name '<s>'
 flag [:c, :config]
 
-desc t.app[:commands][:upload][:desc]
-long_desc t.app[:commands][:upload][:long_desc]
+desc I18n.t('app.commands.upload.desc')
+long_desc I18n.t('app.commands.upload.long_desc')
 command :upload do |c|
 
-  c.desc t.app[:commands][:upload][:commands][:sources][:desc]
-  c.long_desc t.app[:commands][:upload][:commands][:sources][:long_desc]
+  c.desc I18n.t('app.commands.upload.commands.sources.desc')
+  c.long_desc I18n.t('app.commands.upload.commands.sources.long_desc')
   c.command :sources do |c|
 
-    c.desc t.app[:commands][:upload][:commands][:sources][:switches][:auto_update][:desc]
+    c.desc I18n.t('app.commands.upload.commands.sources.switches.auto_update.desc')
     c.switch ['auto-update']
 
     c.action do |global_options, options, args|
@@ -335,22 +334,22 @@ command :upload do |c|
     end # action
   end # command
 
-  c.desc t.app[:commands][:upload][:commands][:translations][:desc]
-  c.long_desc t.app[:commands][:upload][:commands][:translations][:long_desc]
+  c.desc I18n.t('app.commands.upload.commands.translations.desc')
+  c.long_desc I18n.t('app.commands.upload.commands.translations.long_desc')
   c.command :translations do |c|
 
-    c.desc t.app[:commands][:upload][:commands][:translations][:flags][:language][:desc]
+    c.desc I18n.t('app.commands.upload.commands.translations.flags.language.desc')
     c.default_value 'all'
     c.arg_name 'crowdin_language_code'
     c.flag [:l, :language]
 
-    c.desc t.app[:commands][:upload][:commands][:translations][:switches][:import_duplicates][:desc]
+    c.desc I18n.t('app.commands.upload.commands.translations.switches.import_duplicates.desc')
     c.switch ['import-duplicates']
 
-    c.desc t.app[:commands][:upload][:commands][:translations][:switches][:import_eq_suggestions][:desc]
+    c.desc I18n.t('app.commands.upload.commands.translations.switches.import_eq_suggestions.desc')
     c.switch ['import-eq-suggestions']
 
-    c.desc t.app[:commands][:upload][:commands][:translations][:switches][:auto_approve_imported][:desc]
+    c.desc I18n.t('app.commands.upload.commands.translations.switches.auto_approve_imported.desc')
     c.switch ['auto-approve-imported']
 
     c.action do |global_options, options, args|
@@ -448,11 +447,11 @@ command :upload do |c|
 
 end
 
-desc t.app[:commands][:download][:desc]
+desc I18n.t('app.commands.download.desc')
 #arg_name 'Describe arguments to download here'
 command :download do |c|
 
-  c.desc t.app[:commands][:download][:flags][:language][:desc]
+  c.desc I18n.t('app.commands.download.flags.language.desc')
   c.arg_name 'language_code'
   c.flag :l, :language, :default_value => 'all'
 

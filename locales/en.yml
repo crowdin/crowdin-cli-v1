@@ -1,56 +1,57 @@
-app:
-  desc: is a command line tool that allows you to manage and synchronize your localization resources with Crowdin project
-  long_desc: |
-    This tool requires configuration file to be created.
-    See http://crowdin.net/page/cli-tool#configuration-file for more details.
-  flags:
-    config:
-      desc: The configuration file
-  switches:
-    verbose:
-      desc: Be verbose
-  commands:
-    upload:
-      desc: Allows you to upload source files and existing translations to Crowdin project.
-      long_desc: |
-        This command is used to upload source files and translations to Crowdin.
-        This command is used in combination with sub-commands `sources` and `translations`
-      commands:
-        sources:
-          desc: safely upload source files to Crowdin
-          long_desc: |
-            Upload source files to Crowdin project.
-            If there are new localization files locally they will be added to Crowdin project.
-            Othervice files will be updated (if no --no-auto-update option specified).
-          switches:
-            auto_update:
-              desc: |
-                Defines whether to update source files in Crowdin project.
-                --no-auto-update is useful when you just want to upload new files without updating existing ones.
-        translations:
-          desc: upload existing translations to Crowdin project
-          long_desc: |
-            Upload existing translations to Crowdin.
-            See below available options that can be used in combination with this command.
-            If no options specified uploaded translations will be not approved,
-            imported to Crowdin project even if they are duplicated and imported even they are equal to souce string.
-            (In many localization formats they can be considered as not actually translations).
-          flags:
-            language:
-              desc: |
-                Defines what language upload translations to.
-                By default translations will be uploaded for all Crowdin project target languages
-          switches:
-            import_duplicates:
-              desc: Defines whether to add translation if there is the same translation already existing in Crowdin project
-            import_eq_suggestions:
-              desc: Defines whether to add translation if it is equal to source string in Crowdin project
-            auto_approve_imported:
-              desc: Automatically approve uploaded translations
-    download:
-      desc: Download latest translations from Crowdin and put them to the right places in your project
-      flags:
-        language:
-          desc: |
-            If the option is defined the translations will be downloaded for single specified language.
-            Othervice (by default) translations are downloaded for all languages
+en:
+  app:
+    desc: is a command line tool that allows you to manage and synchronize your localization resources with Crowdin project
+    long_desc: |
+      This tool requires configuration file to be created.
+      See http://crowdin.net/page/cli-tool#configuration-file for more details.
+    flags:
+      config:
+        desc: The configuration file
+    switches:
+      verbose:
+        desc: Be verbose
+    commands:
+      upload:
+        desc: Allows you to upload source files and existing translations to Crowdin project.
+        long_desc: |
+          This command is used to upload source files and translations to Crowdin.
+          This command is used in combination with sub-commands `sources` and `translations`
+        commands:
+          sources:
+            desc: safely upload source files to Crowdin
+            long_desc: |
+              Upload source files to Crowdin project.
+              If there are new localization files locally they will be added to Crowdin project.
+              Othervice files will be updated (if no --no-auto-update option specified).
+            switches:
+              auto_update:
+                desc: |
+                  Defines whether to update source files in Crowdin project.
+                  --no-auto-update is useful when you just want to upload new files without updating existing ones.
+          translations:
+            desc: upload existing translations to Crowdin project
+            long_desc: |
+              Upload existing translations to Crowdin.
+              See below available options that can be used in combination with this command.
+              If no options specified uploaded translations will be not approved,
+              imported to Crowdin project even if they are duplicated and imported even they are equal to souce string.
+              (In many localization formats they can be considered as not actually translations).
+            flags:
+              language:
+                desc: |
+                  Defines what language upload translations to.
+                  By default translations will be uploaded for all Crowdin project target languages
+            switches:
+              import_duplicates:
+                desc: Defines whether to add translation if there is the same translation already existing in Crowdin project
+              import_eq_suggestions:
+                desc: Defines whether to add translation if it is equal to source string in Crowdin project
+              auto_approve_imported:
+                desc: Automatically approve uploaded translations
+      download:
+        desc: Download latest translations from Crowdin and put them to the right places in your project
+        flags:
+          language:
+            desc: |
+              If the option is defined the translations will be downloaded for single specified language.
+              Othervice (by default) translations are downloaded for all languages
