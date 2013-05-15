@@ -426,7 +426,7 @@ EOS
 
       translated_files.each_pair do |language, files|
         files.each do |file|
-          file[:dest].sub!(common_dir, '')
+          file[:dest] = file[:dest].sub(common_dir, '')
 
           if remote_project_tree[:files].include?(file[:dest])
             if File.exist?(file[:source])
