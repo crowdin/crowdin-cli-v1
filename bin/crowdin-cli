@@ -77,7 +77,7 @@ def export_pattern_to_path(path, export_pattern, lang, languages_mapping = nil)
   placeholders = pattern.inject([]){ |memo, h| memo << h.first[/%(.*)%/, 1] }
 
   unless languages_mapping.nil?
-    pattern = Hash[pattern.map{|placeholder, str| [
+    pattern = Hash[pattern.map{ |placeholder, str| [
       placeholder,
       (languages_mapping[placeholder[/%(.*)%/, 1]][lang['crowdin_code']] rescue nil) || str]
     }]
@@ -276,7 +276,11 @@ command :upload do |c|
       end # @config['files']
 
       if dest_files.empty?
-        exit_now!("nothing to upload. See http://crowdin.net/page/cli-tool#configuration-file for more details.")
+        exit_now! <<EOS
+No source files to upload.
+Check your configuration file to ensure that they contain valid directives.
+See http://crowdin.net/page/cli-tool#configuration-file for more details.
+EOS
       end
 
       common_dir = @preserve_hierarchy ? '' : find_common_directory_path(dest_files)
@@ -411,12 +415,16 @@ command :upload do |c|
       end # @config['files']
 
       if dest_files.empty?
-        exit_now!("Warning: nothing to upload. See http://crowdin.net/page/cli-tool#configuration-file for more details.")
+        exit_now! <<EOS
+No translation files to upload.
+Check your configuration file to ensure that they contain valid directives.
+See http://crowdin.net/page/cli-tool#configuration-file for more details.
+EOS
       end
 
       common_dir = @preserve_hierarchy ? '' : find_common_directory_path(dest_files)
 
-      translated_files.each do |language, files|
+      translated_files.each_pair do |language, files|
         files.each do |file|
           file[:dest].sub!(common_dir, '')
 
@@ -427,9 +435,9 @@ command :upload do |c|
               resp = @crowdin.upload_translation([] << file, language, params)
               case resp['files'].first[1]
               when 'skipped'
-                puts "\rUploading translation `#{file[:source].sub(@base_path, '')}' - Skipped"
+                puts "\rUploading translation file `#{file[:source].sub(@base_path, '')}' - Skipped"
               when 'uploaded'
-                puts "\rUploading translation `#{file[:source].sub(@base_path, '')}' - OK"
+                puts "\rUploading translation file `#{file[:source].sub(@base_path, '')}' - OK"
               end
             else
               puts "Warning: Local file `#{file[:source]}' does not exists"
@@ -438,7 +446,6 @@ command :upload do |c|
             # if source file not exist, don't upload translation
             puts "Warning: Skip `#{file[:source].sub(@base_path, '')}'"
           end
-
         end
       end
 
@@ -456,19 +463,22 @@ command :download do |c|
   c.flag :l, :language, :default_value => 'all'
 
   c.action do |global_options ,options, args|
-    # use export API method before to download the most recent translations
-    @crowdin.export_translations
-
     language = options[:language]
     project_info = @crowdin.project_info
 
     remote_project_tree = get_remote_files_hierarchy(project_info['files'])
 
-    if language == 'all'
-      project_languages = project_info['languages'].collect{ |h| h['code'] }
-    else
-      project_languages = [] << language
+    project_languages = project_info['languages'].collect{ |h| h['code'] }
+    if language != 'all'
+      if project_languages.include?(language)
+        project_languages = [] << language
+      else
+        exit_now!("language '#{language}' doesn't exist in a project")
+      end
     end
+
+    # use export API method before to download the most recent translations
+    @crowdin.export_translations
 
     supported_languages = @crowdin.supported_languages
     translation_languages = supported_languages.select{ |lang| project_languages.include?(lang['crowdin_code']) }
