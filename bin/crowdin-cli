@@ -368,10 +368,13 @@ EOS
 
       remote_project_tree = get_remote_files_hierarchy(project_info['files'])
 
-      if language == 'all'
-        project_languages = project_info['languages'].collect{ |h| h['code'] }
-      else
-        project_languages = [] << language
+      project_languages = project_info['languages'].collect{ |h| h['code'] }
+      if language != 'all'
+        if project_languages.include?(language)
+          project_languages = [] << language
+        else
+          exit_now!("language '#{language}' doesn't exist in a project")
+        end
       end
 
       supported_languages = @crowdin.supported_languages
@@ -464,6 +467,7 @@ command :download do |c|
 
   c.action do |global_options ,options, args|
     language = options[:language]
+
     project_info = @crowdin.project_info
 
     remote_project_tree = get_remote_files_hierarchy(project_info['files'])
