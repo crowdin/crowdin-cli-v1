@@ -206,6 +206,8 @@ include GLI::App
 
 version Crowdin::CLI::VERSION
 
+subcommand_option_handling :normal
+
 program_desc I18n.t('app.desc')
 program_long_desc I18n.t('app.long_desc')
 sort_help :manually # help commands are ordered in the order declared
