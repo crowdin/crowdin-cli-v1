@@ -5,7 +5,8 @@ Gem::Specification.new do |gem|
   gem.name = 'crowdin-cli'
   gem.version = Crowdin::CLI::VERSION
 
-  gem.summary = 'Crowdin CLI'
+  gem.summary = 'Crowdin CLI.'
+  gem.description = 'A command-line interface to sync files between your computer/server and Crowdin.'
   gem.author = ['Crowdin']
   gem.email = ['support@crowdin.net']
   gem.homepage = 'https://github.com/crowdin/crowdin-cli/'
