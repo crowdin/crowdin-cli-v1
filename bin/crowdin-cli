@@ -206,18 +206,20 @@ include GLI::App
 
 version Crowdin::CLI::VERSION
 
+subcommand_option_handling :normal
+
 program_desc I18n.t('app.desc')
 program_long_desc I18n.t('app.long_desc')
 sort_help :manually # help commands are ordered in the order declared
 wrap_help_text :to_terminal
 
 desc I18n.t('app.switches.verbose.desc')
-switch [:v, :verbose], :negatable => false
+switch [:verbose, :v], :negatable => false
 
 desc I18n.t('app.flags.config.desc')
 default_value File.join(Dir.pwd, 'crowdin.yaml')
 arg_name '<s>'
-flag [:c, :config]
+flag [:config,:c]
 
 desc I18n.t('app.commands.upload.desc')
 long_desc I18n.t('app.commands.upload.long_desc')
@@ -345,7 +347,7 @@ EOS
     c.desc I18n.t('app.commands.upload.commands.translations.flags.language.desc')
     c.default_value 'all'
     c.arg_name 'crowdin_language_code'
-    c.flag [:l, :language]
+    c.flag [:language, :l]
 
     c.desc I18n.t('app.commands.upload.commands.translations.switches.import_duplicates.desc')
     c.switch ['import-duplicates']
@@ -463,7 +465,7 @@ command :download do |c|
 
   c.desc I18n.t('app.commands.download.flags.language.desc')
   c.arg_name 'language_code'
-  c.flag :l, :language, :default_value => 'all'
+  c.flag [:language, :l], :default_value => 'all'
 
   c.action do |global_options ,options, args|
     language = options[:language]
@@ -538,15 +540,15 @@ command :download do |c|
 
 end
 
-pre do |global ,command, options, args|
+pre do |globals ,command, options, args|
   # Pre logic here
   # Return true to proceed; false to abourt and not call the
   # chosen command
   # Use skips_pre before a command to skip this block
   # on that command only
 
-  if File.exists?(global[:config])
-    @config = YAML.load_file(global[:config])
+  if File.exists?(globals[:config])
+    @config = YAML.load_file(globals[:config])
 
     ['api_key', 'project_identifier'].each do |key|
       unless @config[key]
@@ -630,7 +632,7 @@ EOS
     end
   end
 
-  Crowdin::API.log = Logger.new($stderr) if global[:v]
+  Crowdin::API.log = Logger.new($stderr) if globals[:verbose]
   @crowdin = Crowdin::API.new(api_key: @config['api_key'], project_id: @config['project_identifier'], base_url: @config['base_url'] || 'http://api.crowdin.net')
   begin
     @crowdin.project_info
@@ -640,15 +642,15 @@ EOS
     exit_now!("Seems Crowdin server API URL is not valid. Please check the `base_url` parameter in the configuration file.")
   end
 
-  #puts "Executing #{command.name}" if global[:v]
+  #puts "Executing #{command.name}" if globals[:verbose]
   true
 end
 
-post do |global, command, options, args|
+post do |globals, command, options, args|
   # Post logic here
   # Use skips_post before a command to skip this
   # block on that command only
-  #puts "Executed #{command.name}" if global[:v]
+  #puts "Executed #{command.name}" if globals[:verbose]
 end
 
 on_error do |exception|

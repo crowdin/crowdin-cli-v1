@@ -5,7 +5,8 @@ Gem::Specification.new do |gem|
   gem.name = 'crowdin-cli'
   gem.version = Crowdin::CLI::VERSION
 
-  gem.summary = 'Crowdin CLI'
+  gem.summary = 'Crowdin CLI.'
+  gem.description = 'A command-line interface to sync files between your computer/server and Crowdin.'
   gem.author = ['Crowdin']
   gem.email = ['support@crowdin.net']
   gem.homepage = 'https://github.com/crowdin/crowdin-cli/'
@@ -25,7 +26,7 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency('rake')
   gem.add_development_dependency('rdoc')
   gem.add_development_dependency('aruba')
-  gem.add_runtime_dependency('gli', '>= 2.5.6')
+  gem.add_runtime_dependency('gli', '>= 2.6.0')
   gem.add_runtime_dependency('rubyzip', '>= 0.9.9')
   gem.add_runtime_dependency('crowdin-api', '>= 0.0.11')
   gem.add_runtime_dependency('i18n', '>= 0.6.4')
