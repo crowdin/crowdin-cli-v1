@@ -358,7 +358,7 @@ EOS
 
     c.action do |global_options, options, args|
       params = {}
-      params[:import_duplicates]     = options['import-dublicates']     ? 1 : 0
+      params[:import_duplicates]     = options['import-duplicates']     ? 1 : 0
       params[:import_eq_suggestions] = options['import-eq-suggestions'] ? 1 : 0
       params[:auto_approve_imported] = options['auto-approve-imported'] ? 1 : 0
 
