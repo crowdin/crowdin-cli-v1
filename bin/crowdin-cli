@@ -174,20 +174,24 @@ def find_common_directory_path(paths)
   first.slice(0, i).join('/')
 end
 
-def unzip_file(zip, dest, files_list)
+# Extract ZIP file with translations +zipfile_name+ to +dest_path+
+#
+# @params [Hash] files_list ...
+#
+def unzip_file_with_translations(zipfile_name, dest_path, files_list)
   # overwrite files if they already exist inside of the extracted path
   Zip.options[:on_exists_proc] = true
 
   unmatched_files = []
 
-  Zip::ZipFile.open(zip) do |zip_file|
-    zip_file.select{ |f| f.file? }.each do |f|
+  Zip::ZipFile.open(zipfile_name) do |zipfile|
+    zipfile.select{ |zip_entry| zip_entry.file? }.each do |f|
       file = files_list['/' + f.name]
       if file
-        f_path = File.join(dest, file)
-        FileUtils.mkdir_p(File.dirname(f_path))
+        fpath = File.join(dest_path, file)
+        FileUtils.mkdir_p(File.dirname(fpath))
         puts "Download: `#{file}'"
-        zip_file.extract(f, f_path)
+        zipfile.extract(f, fpath)
       else
         unmatched_files << f
       end
@@ -492,13 +496,12 @@ command :download do |c|
     source_language = project_info['details']['source_language']['code']
     source_language = supported_languages.find{ |lang| lang['crowdin_code'] == source_language }
 
-    # keys is all possible files in zip archive
+    # keys is all possible files in .ZIP archive
     # values is resulted local files
-    # usually they are equal
-    downloadable_files = {}
+    downloadable_files_hash = {}
 
     @config['files'].each do |file|
-      languages_mapping = file['languages_mapping'] #Hash or NilClass
+      languages_mapping = file['languages_mapping'] # Hash or NilClass
 
       if File.exists?("#{@base_path}#{file['source']}")
         dest = file['source'].sub("#{@base_path}", '')
@@ -507,7 +510,7 @@ command :download do |c|
           zipped_file = export_pattern_to_path(dest, file['translation'], lang)
           local_file  = export_pattern_to_path(dest, file['translation'], lang, languages_mapping)
 
-          downloadable_files[zipped_file] = local_file
+          downloadable_files_hash[zipped_file] = local_file
         end
       else
         Dir.glob("#{@base_path}#{file['source']}").select{ |fn| File.file?(fn) }.each do |source|
@@ -519,7 +522,7 @@ command :download do |c|
             zipped_file = export_pattern_to_path(dest, export_pattern, lang)
             local_file  = export_pattern_to_path(dest, export_pattern, lang, languages_mapping)
 
-            downloadable_files[zipped_file] = local_file
+            downloadable_files_hash[zipped_file] = local_file
           end
 
         end
@@ -527,14 +530,15 @@ command :download do |c|
     end # @config['files']
 
     ##
-    file = Tempfile.new(language)
-    path = file.path
+    tempfile = Tempfile.new(language)
+    zipfile_name = tempfile.path
     begin
-      @crowdin.download_translation(language, output: path)
-      unzip_file(path, @base_path, downloadable_files)
+      @crowdin.download_translation(language, output: zipfile_name)
+
+      unzip_file_with_translations(zipfile_name, @base_path, downloadable_files_hash)
     ensure
-      file.close
-      file.unlink # delete the temp file
+      tempfile.close
+      tempfile.unlink # delete the tempfile
     end
   end
 
