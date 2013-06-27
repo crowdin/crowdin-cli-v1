@@ -174,14 +174,16 @@ def find_common_directory_path(paths)
   first.slice(0, i).join('/')
 end
 
-# Extract ZIP file with translations +zipfile_name+ to +dest_path+
+# Extract compressed files +files_list+ in a ZIP archive +zipfile_name+ to +dest_path+
 #
-# @params [Hash] files_list ...
+# +files_list+ is a Hash of key-value pairs. Where key is a posible archive filename based on current project configuration
+# and value is the expanded filename
 #
 def unzip_file_with_translations(zipfile_name, dest_path, files_list)
   # overwrite files if they already exist inside of the extracted path
   Zip.options[:on_exists_proc] = true
 
+  # files that exists in archive and doesn't match current project configuration
   unmatched_files = []
 
   Zip::ZipFile.open(zipfile_name) do |zipfile|
