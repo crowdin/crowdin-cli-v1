@@ -142,7 +142,7 @@ You can also override language codes for other placeholders like `%android_code%
 
 From time to time there are directories you don't want translate on Crowdin.
 Local per-file rules can be added to the config file in your project.
-```ruby
+```
 files:
   -
     source: /locale/en/**/*.po
