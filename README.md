@@ -138,6 +138,21 @@ Check [complete list of Crowdin language codes](http://crowdin.net/page/api/lang
 
 You can also override language codes for other placeholders like `%android_code%`, `%locale%` etc...
 
+### Ignoring directories
+
+From time to time there are directories you don't want translate on Crowdin.
+Local per-file rules can be added to the config file in your project.
+```ruby
+files:
+  -
+    source: /locale/en/**/*.po
+    translation: /locale/%two_letters_code%/**/%original_file_name%
+    ignore:
+      - /locale/en/templates
+      - /locale/en/workflow
+
+```
+
 ## Example Configurations
 
 ### GetText Project

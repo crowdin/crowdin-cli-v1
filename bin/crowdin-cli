@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'pp'
+require 'find'
 require 'crowdin-cli'
 
 # GLI_DEBUG=true bundle exec bin/crowdin-cli
@@ -268,19 +269,30 @@ command :upload do |c|
 
           local_files << local_file
         else
-          Dir.glob("#{@base_path}#{file['source']}").select{ |fn| File.file?(fn) }.each do |source|
-            dest = source.sub("#{@base_path}", '') # relative path in Crowdin
-            dest_files << dest
+          Find.find(@base_path) do |source_path|
+            dest = source_path.sub(@base_path, '') # relative path in Crowdin
 
-            export_pattern = construct_export_pattern(dest, file['source'], file['translation'])
+            if File.directory?(source_path)
+              ignores = file['ignore'] || []
+              if ignores.include?(dest)
+                Find.prune # Don't look any further into this directory
+              else
+                next
+              end
+            elsif File.fnmatch?(file['source'], dest)
+              dest_files << dest
 
-            local_file = { dest: dest, source: source, export_pattern: export_pattern }
-            local_file.merge!({ sheme: file['scheme'] }) if file.has_key?('scheme')
-            local_file.merge!({ first_line_contains_header: file['first_line_contains_header'] }) if file.has_key?('first_line_contains_header')
+              export_pattern = construct_export_pattern(dest, file['source'], file['translation'])
 
-            local_files << local_file
-          end
-        end # if
+              local_file = { dest: dest, source: source_path, export_pattern: export_pattern }
+              local_file.merge!({ sheme: file['scheme'] }) if file.has_key?('scheme')
+              local_file.merge!({ first_line_contains_header: file['first_line_contains_header'] }) if file.has_key?('first_line_contains_header')
+
+              local_files << local_file
+            end
+          end # Find
+
+        end # if File.exists?
       end # @config['files']
 
       if dest_files.empty?
@@ -410,18 +422,29 @@ EOS
             translated_files[lang['crowdin_code']] << { source: "#{@base_path}#{source}", dest: dest }
           end
         else
-          Dir.glob("#{@base_path}#{file['source']}").select{ |fn| File.file?(fn) }.each do |source|
-            dest = source.sub("#{@base_path}", '') # relative path in Crowdin
-            dest_files << dest
+          Find.find(@base_path) do |source_path|
+            dest = source_path.sub(@base_path, '') # relative path in Crowdin
 
-            export_pattern = construct_export_pattern(dest, file['source'], file['translation'])
+            if File.directory?(source_path)
+              ignores = file['ignore'] || []
+              if ignores.include?(dest)
+                Find.prune # Don't look any further into this directory
+              else
+                next
+              end
+            elsif File.fnmatch?(file['source'], dest)
+              dest_files << dest
 
-            translation_languages.each do |lang|
-              source = export_pattern_to_path(dest, export_pattern, lang, languages_mapping)
-              translated_files[lang['crowdin_code']] << { source: "#{@base_path}#{source}", dest: dest }
+              export_pattern = construct_export_pattern(dest, file['source'], file['translation'])
+
+              translation_languages.each do |lang|
+                source = export_pattern_to_path(dest, export_pattern, lang, languages_mapping)
+                translated_files[lang['crowdin_code']] << { source: "#{@base_path}#{source}", dest: dest }
+              end
             end
 
-          end
+          end # Find
+
         end # if
       end # @config['files']
 
@@ -454,7 +477,7 @@ EOS
               puts "Warning: Local file `#{file[:source]}' does not exists"
             end
           else
-            # if source file not exist, don't upload translation
+            # if source file does not exist, don't upload translations
             puts "Warning: Skip `#{file[:source].sub(@base_path, '')}'"
           end
         end
@@ -515,19 +538,29 @@ command :download do |c|
           downloadable_files_hash[zipped_file] = local_file
         end
       else
-        Dir.glob("#{@base_path}#{file['source']}").select{ |fn| File.file?(fn) }.each do |source|
-          dest = source.sub("#{@base_path}", '') # relative path in Crowdin
+        Find.find(@base_path) do |source_path|
+          dest = source_path.sub(@base_path, '') # relative path in Crowdin
 
-          export_pattern = construct_export_pattern(dest, file['source'], file['translation'])
+          if File.directory?(source_path)
+            ignores = file['ignore'] || []
+            if ignores.include?(dest)
+              Find.prune # Don't look any further into this directory
+            else
+              next
+            end
+          elsif File.fnmatch?(file['source'], dest)
+            export_pattern = construct_export_pattern(dest, file['source'], file['translation'])
 
-          translation_languages.each do |lang|
-            zipped_file = export_pattern_to_path(dest, export_pattern, lang)
-            local_file  = export_pattern_to_path(dest, export_pattern, lang, languages_mapping)
+            translation_languages.each do |lang|
+              zipped_file = export_pattern_to_path(dest, export_pattern, lang)
+              local_file  = export_pattern_to_path(dest, export_pattern, lang, languages_mapping)
 
-            downloadable_files_hash[zipped_file] = local_file
+              downloadable_files_hash[zipped_file] = local_file
+            end
           end
 
-        end
+        end # Find
+
       end # if
     end # @config['files']
 
