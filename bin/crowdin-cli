@@ -237,6 +237,7 @@ command :upload do |c|
   c.command :sources do |c|
 
     c.desc I18n.t('app.commands.upload.commands.sources.switches.auto_update.desc')
+    c.default_value true
     c.switch ['auto-update']
 
     c.action do |global_options, options, args|
@@ -317,9 +318,7 @@ EOS
         @crowdin.add_directory(dir)
       end
 
-      puts options
-
-      if options['auto-update'].nil? or options['auto-update']
+      if options['auto-update']
         # Update existing files in Crowdin project
         #
         # array containing elements common to the two arrays
