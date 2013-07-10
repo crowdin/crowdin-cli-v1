@@ -221,12 +221,12 @@ sort_help :manually # help commands are ordered in the order declared
 wrap_help_text :to_terminal
 
 desc I18n.t('app.switches.verbose.desc')
-switch [:verbose, :v], :negatable => false
+switch [:v, :verbose], :negatable => false
 
 desc I18n.t('app.flags.config.desc')
 default_value File.join(Dir.pwd, 'crowdin.yaml')
 arg_name '<s>'
-flag [:config,:c]
+flag [:c, :config]
 
 desc I18n.t('app.commands.upload.desc')
 long_desc I18n.t('app.commands.upload.long_desc')
@@ -317,6 +317,8 @@ EOS
         @crowdin.add_directory(dir)
       end
 
+      puts options
+
       if options['auto-update'].nil? or options['auto-update']
         # Update existing files in Crowdin project
         #
@@ -365,7 +367,7 @@ EOS
     c.desc I18n.t('app.commands.upload.commands.translations.flags.language.desc')
     c.default_value 'all'
     c.arg_name 'crowdin_language_code'
-    c.flag [:language, :l]
+    c.flag [:l, :language]
 
     c.desc I18n.t('app.commands.upload.commands.translations.switches.import_duplicates.desc')
     c.switch ['import-duplicates']
@@ -494,7 +496,7 @@ command :download do |c|
 
   c.desc I18n.t('app.commands.download.flags.language.desc')
   c.arg_name 'language_code'
-  c.flag [:language, :l], :default_value => 'all'
+  c.flag [:l, :language], :default_value => 'all'
 
   c.action do |global_options ,options, args|
     language = options[:language]
