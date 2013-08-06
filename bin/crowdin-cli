@@ -63,16 +63,16 @@ def export_pattern_to_path(path, export_pattern, lang, languages_mapping = nil)
   file_name          = File.basename(path, File.extname(path))
 
   pattern = {
+    '%original_file_name%'     => original_file_name,
+    '%original_path%'          => original_path,
+    '%file_extension%'         => file_extension,
+    '%file_name%'              => file_name,
     '%language%'               => lang['name'],
     '%two_letters_code%'       => lang['iso_639_1'],
     '%three_letters_code%'     => lang['iso_639_3'],
     '%locale%'                 => lang['locale'],
     '%locale_with_underscore%' => lang['locale'].gsub('-', '_'),
     '%android_code%'           => android_locale_code(lang['locale']),
-    '%original_file_name%'     => original_file_name,
-    '%original_path%'          => original_path,
-    '%file_extension%'         => file_extension,
-    '%file_name%'              => file_name,
   }
 
   placeholders = pattern.inject([]){ |memo, h| memo << h.first[/%(.*)%/, 1] }
@@ -98,7 +98,9 @@ def construct_export_pattern(path, source, translation)
     translation = translation.sub('**', double_asterisk)
   end
 
-  export_pattern = translation.split('/').reject(&:empty?).join('/').insert(0, '/')
+  # XXX
+  #export_pattern = translation.split('/').reject(&:empty?).join('/').insert(0, '/')
+  export_pattern = translation
 
   return export_pattern
 end
@@ -217,7 +219,7 @@ subcommand_option_handling :normal
 
 program_desc I18n.t('app.desc')
 program_long_desc I18n.t('app.long_desc')
-sort_help :manually # help commands are ordered in the order declared
+sort_help :alpha # help commands are ordered in the order declared
 wrap_help_text :to_terminal
 
 desc I18n.t('app.switches.verbose.desc')
@@ -259,12 +261,12 @@ command :upload do |c|
           puts "Warning: #{placeholder} is not valid variable supported by Crowdin. See http://crowdin.net/page/cli-tool#configuration-file for more details."
         end
 
-        if File.exist?("#{@base_path}#{file['source']}")
+        if File.exist?(File.join(@base_path, file['source']))
           dest = file['source']
           dest_files << dest
 
-          local_file = { dest: dest, source: "#{@base_path}#{file['source']}", export_pattern: file['translation'] }
-          # Used only when uploading CSV file to define data columns mapping.
+          local_file = { dest: dest, source: File.join(@base_path, file['source']), export_pattern: file['translation'] }
+          # Used only when uploading CSV file to define data columns mapping
           local_file.merge!({ sheme: file['scheme'] }) if file.has_key?('scheme')
           local_file.merge!({ first_line_contains_header: file['first_line_contains_header'] }) if file.has_key?('first_line_contains_header')
 
@@ -414,14 +416,25 @@ EOS
 
         languages_mapping = file['languages_mapping']
 
-        if File.exists?("#{@base_path}#{file['source']}")
+        # CSV files only (default: false)
+        multilanguage = file['multilanguage'] || false
+
+        if File.exists?(File.join(@base_path, file['source']))
           dest = file['source'].sub("#{@base_path}", '')
           dest_files << dest
 
-          translation_languages.each do |lang|
-            source = export_pattern_to_path(dest, file['translation'], lang, languages_mapping)
-            translated_files[lang['crowdin_code']] << { source: "#{@base_path}#{source}", dest: dest }
+          if !multilanguage
+            translation_languages.each do |lang|
+              source = export_pattern_to_path(dest, file['translation'], lang, languages_mapping)
+              translated_files[lang['crowdin_code']] << { source: File.join(@base_path, source), dest: dest }
+            end
+          else
+            # XXX
+            lang = translation_languages.first
+            source = export_pattern_to_path(dest, file['translation'], lang)
+            translated_files[lang['crowdin_code']] << { source: File.join(@base_path, source), dest: dest }
           end
+
         else
           Find.find(@base_path) do |source_path|
             dest = source_path.sub(@base_path, '') # relative path in Crowdin
@@ -438,12 +451,19 @@ EOS
 
               export_pattern = construct_export_pattern(dest, file['source'], file['translation'])
 
-              translation_languages.each do |lang|
-                source = export_pattern_to_path(dest, export_pattern, lang, languages_mapping)
-                translated_files[lang['crowdin_code']] << { source: "#{@base_path}#{source}", dest: dest }
+              if !multilanguage
+                translation_languages.each do |lang|
+                  source = export_pattern_to_path(dest, export_pattern, lang, languages_mapping)
+                  translated_files[lang['crowdin_code']] << { source: File.join(@base_path, source), dest: dest }
+                end
+              else
+                # XXX
+                lang = translation_languages.first
+                source = export_pattern_to_path(dest, file['translation'], lang)
+                translated_files[lang['crowdin_code']] << { source: File.join(@base_path, source), dest: dest }
               end
-            end
 
+            end
           end # Find
 
         end # if
@@ -529,7 +549,7 @@ command :download do |c|
     @config['files'].each do |file|
       languages_mapping = file['languages_mapping'] # Hash or NilClass
 
-      if File.exists?("#{@base_path}#{file['source']}")
+      if File.exists?(File.join(@base_path, file['source']))
         dest = file['source'].sub("#{@base_path}", '')
 
         translation_languages.each do |lang|
@@ -619,7 +639,7 @@ EOS
 
   @config['files'].each do |file|
     file['source'] = '/' + file['source'] unless file['source'].start_with?('/')
-    file['translation'] = '/' + file['translation'] unless file['translation'].start_with?('/')
+    #file['translation'] = '/' + file['translation'] unless file['translation'].start_with?('/')
 
     if file['source'].include?('**')
       if file['source'].scan('**').size > 1
