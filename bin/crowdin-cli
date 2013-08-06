@@ -219,7 +219,7 @@ subcommand_option_handling :normal
 
 program_desc I18n.t('app.desc')
 program_long_desc I18n.t('app.long_desc')
-sort_help :alpha # help commands are ordered in the order declared
+sort_help :manually # help commands are ordered in the order declared
 wrap_help_text :to_terminal
 
 desc I18n.t('app.switches.verbose.desc')
