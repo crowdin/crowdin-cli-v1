@@ -299,7 +299,6 @@ command :upload do |c|
         end # if File.exists?
       end # @config['files']
 
-
       if dest_files.empty?
         exit_now! <<EOS
 No source files to upload.
