@@ -98,9 +98,8 @@ def construct_export_pattern(path, source, translation)
     translation = translation.sub('**', double_asterisk)
   end
 
-  # XXX
-  #export_pattern = translation.split('/').reject(&:empty?).join('/').insert(0, '/')
-  export_pattern = translation
+  export_pattern = translation.split('/').reject(&:empty?).join('/')
+  export_pattern.insert(0, '/') if translation.start_with?('/')
 
   return export_pattern
 end
@@ -191,7 +190,9 @@ def unzip_file_with_translations(zipfile_name, dest_path, files_list)
 
   Zip::ZipFile.open(zipfile_name) do |zipfile|
     zipfile.select{ |zip_entry| zip_entry.file? }.each do |f|
-      file = files_list['/' + f.name]
+      # XXX
+      # `f' - relative path in archive
+      file = files_list[f.name]
       if file
         fpath = File.join(dest_path, file)
         FileUtils.mkdir_p(File.dirname(fpath))
@@ -282,7 +283,7 @@ command :upload do |c|
               else
                 next
               end
-            elsif File.fnmatch?(file['source'], dest)
+            elsif File.fnmatch?(file['source'], dest, File::FNM_PATHNAME)
               dest_files << dest
 
               export_pattern = construct_export_pattern(dest, file['source'], file['translation'])
@@ -297,6 +298,7 @@ command :upload do |c|
 
         end # if File.exists?
       end # @config['files']
+
 
       if dest_files.empty?
         exit_now! <<EOS
@@ -446,7 +448,7 @@ EOS
               else
                 next
               end
-            elsif File.fnmatch?(file['source'], dest)
+            elsif File.fnmatch?(file['source'], dest, File::FNM_PATHNAME)
               dest_files << dest
 
               export_pattern = construct_export_pattern(dest, file['source'], file['translation'])
@@ -549,15 +551,27 @@ command :download do |c|
     @config['files'].each do |file|
       languages_mapping = file['languages_mapping'] # Hash or NilClass
 
+      # CSV files only (default: false)
+      multilanguage = file['multilanguage'] || false
+
       if File.exists?(File.join(@base_path, file['source']))
         dest = file['source'].sub("#{@base_path}", '')
 
-        translation_languages.each do |lang|
+        if !multilanguage
+          translation_languages.each do |lang|
+            zipped_file = export_pattern_to_path(dest, file['translation'], lang)
+            zipped_file.sub!(/^\//, '')
+            local_file  = export_pattern_to_path(dest, file['translation'], lang, languages_mapping)
+            downloadable_files_hash[zipped_file] = local_file
+          end
+        else
+          lang = translation_languages.first
           zipped_file = export_pattern_to_path(dest, file['translation'], lang)
+          zipped_file.sub!(/^\//, '')
           local_file  = export_pattern_to_path(dest, file['translation'], lang, languages_mapping)
-
           downloadable_files_hash[zipped_file] = local_file
         end
+
       else
         Find.find(@base_path) do |source_path|
           dest = source_path.sub(@base_path, '') # relative path in Crowdin
@@ -569,21 +583,28 @@ command :download do |c|
             else
               next
             end
-          elsif File.fnmatch?(file['source'], dest)
+          elsif File.fnmatch?(file['source'], dest, File::FNM_PATHNAME)
             export_pattern = construct_export_pattern(dest, file['source'], file['translation'])
 
-            translation_languages.each do |lang|
+            if !multilanguage
+              translation_languages.each do |lang|
+                zipped_file = export_pattern_to_path(dest, export_pattern, lang)
+                zipped_file.sub!(/^\//, '')
+                local_file  = export_pattern_to_path(dest, export_pattern, lang, languages_mapping)
+                downloadable_files_hash[zipped_file] = local_file
+              end
+            else
               zipped_file = export_pattern_to_path(dest, export_pattern, lang)
+              zipped_file.sub!(/^\//, '')
               local_file  = export_pattern_to_path(dest, export_pattern, lang, languages_mapping)
-
               downloadable_files_hash[zipped_file] = local_file
             end
+
           end
-
         end # Find
-
       end # if
     end # @config['files']
+
 
     ##
     tempfile = Tempfile.new(language)
