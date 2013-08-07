@@ -153,6 +153,50 @@ files:
 
 ```
 
+### Uploading CSV files via API
+
+```
+---
+project_identifier: test
+api_key: KeepTheAPIkeySecret
+base_url: http://api.crowdin.net
+base_path: /path/to/your/project
+
+files:
+  -
+   source: '/*.csv'
+   translation: '%two_letters_code%/%original_file_name%'
+   # Defines whether first line should be imported or it contains columns headers
+   first_line_contains_header: true
+   # Used only when uploading CSV file to define data columns mapping.
+   scheme: "identifier,source_phrase,translation,context,max_length"
+```
+
+#### Multicolumn CSV
+
+In case when CSV file should contains translations to all target languages you can use per-file option `multilingual_spreadsheet`.
+
+CSV file example:
+```
+identifier,source_phrase,context,Ukrainian,Russian,French
+ident1,Source 1,Context 1,,,
+ident2,Source 2,Context 2,,,
+ident3,Source 3,Context 3,,,
+```
+
+Configuration file example:
+```
+files:
+  -
+    source: multicolumn.csv
+    translation: multicolumn.csv
+    first_line_contains_header: true
+    scheme: "identifier,source_phrase,context,uk,ru,fr"
+    multilingual_spreadsheet: true
+
+```
+
+
 ## Example Configurations
 
 ### GetText Project
@@ -194,25 +238,6 @@ files:
        # acording to specification instead of just "uk"
        de: de
        ru: ru
-```
-
-### Uploading CSV files via API
-
-```
----
-project_identifier: test
-api_key: KeepTheAPIkeySecret
-base_url: http://api.crowdin.net
-base_path: /path/to/your/project
-
-files:
-  -
-   source: '/*.csv'
-   translation: '%two_letters_code%/%original_file_name%'
-   # Defines whether first line should be imported or it contains columns headers
-   first_line_contains_header: true
-   # Used only when uploading CSV file to define data columns mapping.
-   scheme: "identifier,source_phrase,translation,context,max_length"
 ```
 
 ## Usage

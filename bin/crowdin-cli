@@ -418,13 +418,13 @@ EOS
         languages_mapping = file['languages_mapping']
 
         # CSV files only (default: false)
-        multilanguage = file['multilanguage'] || false
+        multilingual_spreadsheet = file['multilingual_spreadsheet'] || false
 
         if File.exists?(File.join(@base_path, file['source']))
           dest = file['source'].sub("#{@base_path}", '')
           dest_files << dest
 
-          if !multilanguage
+          if !multilingual_spreadsheet
             translation_languages.each do |lang|
               source = export_pattern_to_path(dest, file['translation'], lang, languages_mapping)
               translated_files[lang['crowdin_code']] << { source: File.join(@base_path, source), dest: dest }
@@ -452,7 +452,7 @@ EOS
 
               export_pattern = construct_export_pattern(dest, file['source'], file['translation'])
 
-              if !multilanguage
+              if !multilingual_spreadsheet
                 translation_languages.each do |lang|
                   source = export_pattern_to_path(dest, export_pattern, lang, languages_mapping)
                   translated_files[lang['crowdin_code']] << { source: File.join(@base_path, source), dest: dest }
@@ -551,12 +551,12 @@ command :download do |c|
       languages_mapping = file['languages_mapping'] # Hash or NilClass
 
       # CSV files only (default: false)
-      multilanguage = file['multilanguage'] || false
+      multilingual_spreadsheet = file['multilingual_spreadsheet'] || false
 
       if File.exists?(File.join(@base_path, file['source']))
         dest = file['source'].sub("#{@base_path}", '')
 
-        if !multilanguage
+        if !multilingual_spreadsheet
           translation_languages.each do |lang|
             zipped_file = export_pattern_to_path(dest, file['translation'], lang)
             zipped_file.sub!(/^\//, '')
@@ -585,7 +585,7 @@ command :download do |c|
           elsif File.fnmatch?(file['source'], dest, File::FNM_PATHNAME)
             export_pattern = construct_export_pattern(dest, file['source'], file['translation'])
 
-            if !multilanguage
+            if !multilingual_spreadsheet
               translation_languages.each do |lang|
                 zipped_file = export_pattern_to_path(dest, export_pattern, lang)
                 zipped_file.sub!(/^\//, '')
