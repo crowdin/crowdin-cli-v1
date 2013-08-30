@@ -27,7 +27,7 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency('rdoc')
   gem.add_development_dependency('aruba')
   gem.add_runtime_dependency('gli', '>= 2.7.0')
-  gem.add_runtime_dependency('rubyzip', '>= 0.9.9')
+  gem.add_runtime_dependency('rubyzip', '>= 1.0.0')
   gem.add_runtime_dependency('crowdin-api', '>= 0.0.11')
   gem.add_runtime_dependency('i18n', '>= 0.6.4')
   gem.platform = Gem::Platform::RUBY

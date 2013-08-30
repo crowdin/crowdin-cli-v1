@@ -183,12 +183,12 @@ end
 #
 def unzip_file_with_translations(zipfile_name, dest_path, files_list)
   # overwrite files if they already exist inside of the extracted path
-  Zip.options[:on_exists_proc] = true
+  Zip.on_exists_proc = true
 
   # files that exists in archive and doesn't match current project configuration
   unmatched_files = []
 
-  Zip::ZipFile.open(zipfile_name) do |zipfile|
+  Zip::File.open(zipfile_name) do |zipfile|
     zipfile.select{ |zip_entry| zip_entry.file? }.each do |f|
       # XXX
       # `f' - relative path in archive
