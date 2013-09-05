@@ -593,6 +593,7 @@ command :download do |c|
                 downloadable_files_hash[zipped_file] = local_file
               end
             else
+              lang = translation_languages.first
               zipped_file = export_pattern_to_path(dest, export_pattern, lang)
               zipped_file.sub!(/^\//, '')
               local_file  = export_pattern_to_path(dest, export_pattern, lang, languages_mapping)
@@ -603,7 +604,6 @@ command :download do |c|
         end # Find
       end # if
     end # @config['files']
-
 
     ##
     tempfile = Tempfile.new(language)
