@@ -693,13 +693,6 @@ Warning: Configuration file misses parameter `base_path` that defines your proje
 EOS
   end
 
-  if @config['remote_path']
-    @remote_path = @config['remote_path']
-    @remote_path = '/' + @remote_path unless @remote_path.start_with?('/')
-  else
-    @remote_path = ''
-  end
-
   @preserve_hierarchy = false
   if @config['preserve_hierarchy']
     @preserve_hierarchy = case @config['preserve_hierarchy']
