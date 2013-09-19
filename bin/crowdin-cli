@@ -57,7 +57,7 @@ end
 # @option lang [String] :locale
 #
 def export_pattern_to_path(path, export_pattern, lang, languages_mapping = nil)
-  original_path      = File.dirname(path)
+  original_path      = File.dirname(path)[1..-1]
   original_file_name = File.basename(path)
   file_extension     = File.extname(path)[1..-1]
   file_name          = File.basename(path, File.extname(path))
@@ -402,10 +402,11 @@ EOS
       end
 
       supported_languages = @crowdin.supported_languages
-      translation_languages = supported_languages.select{ |lang| project_languages.include?(lang['crowdin_code']) }
 
       source_language = project_info['details']['source_language']['code']
       source_language = supported_languages.find{ |lang| lang['crowdin_code'] == source_language }
+
+      translation_languages = supported_languages.select{ |lang| project_languages.include?(lang['crowdin_code']) }
 
       translated_files = Hash.new{ |hash, key| hash[key] = Array.new }
       dest_files = []
@@ -431,8 +432,8 @@ EOS
             end
           else
             # XXX
-            lang = translation_languages.first
-            source = export_pattern_to_path(dest, file['translation'], lang)
+            lang = source_language
+            source = export_pattern_to_path(dest, file['translation'], lang, languages_mapping)
             translated_files[lang['crowdin_code']] << { source: File.join(@base_path, source), dest: dest }
           end
 
@@ -459,8 +460,8 @@ EOS
                 end
               else
                 # XXX
-                lang = translation_languages.first
-                source = export_pattern_to_path(dest, file['translation'], lang)
+                lang = source_language
+                source = export_pattern_to_path(dest, export_pattern, lang, languages_mapping)
                 translated_files[lang['crowdin_code']] << { source: File.join(@base_path, source), dest: dest }
               end
 
@@ -538,10 +539,11 @@ command :download do |c|
     @crowdin.export_translations
 
     supported_languages = @crowdin.supported_languages
-    translation_languages = supported_languages.select{ |lang| project_languages.include?(lang['crowdin_code']) }
 
     source_language = project_info['details']['source_language']['code']
     source_language = supported_languages.find{ |lang| lang['crowdin_code'] == source_language }
+
+    translation_languages = supported_languages.select{ |lang| project_languages.include?(lang['crowdin_code']) }
 
     # keys is all possible files in .ZIP archive
     # values is resulted local files
@@ -564,7 +566,7 @@ command :download do |c|
             downloadable_files_hash[zipped_file] = local_file
           end
         else
-          lang = translation_languages.first
+          lang = source_language
           zipped_file = export_pattern_to_path(dest, file['translation'], lang)
           zipped_file.sub!(/^\//, '')
           local_file  = export_pattern_to_path(dest, file['translation'], lang, languages_mapping)
@@ -593,7 +595,7 @@ command :download do |c|
                 downloadable_files_hash[zipped_file] = local_file
               end
             else
-              lang = translation_languages.first
+              lang = source_language
               zipped_file = export_pattern_to_path(dest, export_pattern, lang)
               zipped_file.sub!(/^\//, '')
               local_file  = export_pattern_to_path(dest, export_pattern, lang, languages_mapping)
@@ -713,7 +715,10 @@ EOS
   end
 
   Crowdin::API.log = Logger.new($stderr) if globals[:verbose]
-  @crowdin = Crowdin::API.new(api_key: @config['api_key'], project_id: @config['project_identifier'], base_url: @config['base_url'] || 'http://api.crowdin.net')
+
+  base_url = @config['base_url'] || 'http://api.crowdin.net'
+  @crowdin = Crowdin::API.new(api_key: @config['api_key'], project_id: @config['project_identifier'], base_url: base_url)
+
   begin
     @crowdin.project_info
   rescue Crowdin::API::Errors::Error => err
