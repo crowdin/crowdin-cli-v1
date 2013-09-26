@@ -279,13 +279,13 @@ command :upload do |c|
             dest = source_path.sub(@base_path, '') # relative path in Crowdin
 
             if File.directory?(source_path)
-              if ignores.any?{ |pattent| File.fnmatch?(pattent, dest) }
+              if ignores.any?{ |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
                 Find.prune # Don't look any further into this directory
               else
                 next
               end
             elsif File.fnmatch?(file['source'], dest, File::FNM_PATHNAME)
-              next if ignores.any?{ |pattent| File.fnmatch?(pattent, dest) }
+              next if ignores.any?{ |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
               
               dest_files << dest
 
@@ -445,13 +445,13 @@ EOS
             dest = source_path.sub(@base_path, '') # relative path in Crowdin
 
             if File.directory?(source_path)
-              if ignores.any?{ |pattent| File.fnmatch?(pattent, dest) }
+              if ignores.any?{ |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
                 Find.prune # Don't look any further into this directory
               else
                 next
               end
             elsif File.fnmatch?(file['source'], dest, File::FNM_PATHNAME)
-              next if ignores.any?{ |pattent| File.fnmatch?(pattent, dest) }
+              next if ignores.any?{ |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
 
               dest_files << dest
 
@@ -575,13 +575,13 @@ command :download do |c|
           dest = source_path.sub(@base_path, '') # relative path in Crowdin
 
           if File.directory?(source_path)
-            if ignores.any?{ |pattent| File.fnmatch?(pattent, dest) }
+            if ignores.any?{ |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
               Find.prune # Don't look any further into this directory
             else
               next
             end
           elsif File.fnmatch?(file['source'], dest, File::FNM_PATHNAME)
-            next if ignores.any?{ |pattent| File.fnmatch?(pattent, dest) }
+            next if ignores.any?{ |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
 
             export_pattern = construct_export_pattern(dest, file['source'], file['translation'])
 
