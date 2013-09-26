@@ -104,21 +104,30 @@ def construct_export_pattern(path, source, translation)
   return export_pattern
 end
 
-# Provides a partial implementation of translate a glob +pattern+ to a regular expression
-# NOTE:
-# `**` surrounded by backslashes `/` in the +pattern+
-# `**` used only once in the +pattern+
+# This is a partial translation of the algorithm defined in fnmatch.py
+# https://github.com/python-git/python/blob/master/Lib/fnmatch.py
+# Provides a partial implementation of translate a glob +pat+ to a regular expression
 #
-def translate_pattern_to_regexp(pattern)
+# Patterns are Unix shell style:
+# *       matches everything
+# ?       matches any single character
+# [seq]   matches any character in seq
+# [^seq]  matches any char not in seq
+#
+# NOTE:
+# `**` surrounded by backslashes `/` in the +pat+
+# `**` used only once in the +pat+
+#
+def translate_pattern_to_regexp(pat)
   i = 0
-  n = pattern.size
+  n = pat.size
   res = ''
   while i < n
-    c = pattern[i]
+    c = pat[i]
     i = i + 1
     if c == '*'
       j = i
-      if j < n and pattern[j] == '*'
+      if j < n and pat[j] == '*'
         res[-1] = '(\/)?(?<double_asterisk>.*)?'
         i = j + 1
       else
@@ -126,8 +135,37 @@ def translate_pattern_to_regexp(pattern)
       end
     elsif c == '?'
       res << '.'
+    elsif c == '['
+      j = i
+      # The following two statements check if the sequence we stumbled
+      # upon is '[]' or '[!]' because those are not valid character
+      # classes.
+      if j < n and pat[j] == '!'
+        j = j + 1
+      end
+      if j < n and pat[j] == ']'
+        j = j + 1
+      end
+      # Look for the closing ']' right off the bat. If one is not found,
+      # escape the opening '[' and continue.  If it is found, process
+      # he contents of '[...]'.
+      while j < n and pat[j] != ']'
+        j = j + 1
+      end
+      if j >= n
+        res = res + '\\['
+      else
+        stuff = pat[i...j].gsub('\\', '\\\\')
+        i = j + 1
+        if stuff[0] == '^'
+          stuff = '^' + stuff[1..-1]
+        #elsif stuff[0] == '^'
+        #  stuff = '\\' + stuff
+        end
+        res = "#{res}[#{stuff}]"
+      end
     else
-      res << Regexp.escape(c)
+      res = res + Regexp.escape(c)
     end
   end
 
