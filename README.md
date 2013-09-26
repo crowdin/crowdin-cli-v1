@@ -140,8 +140,9 @@ You can also override language codes for other placeholders like `%android_code%
 
 ### Ignoring directories
 
-From time to time there are directories you don't want translate on Crowdin.
+From time to time there are files and directories you don't want translate on Crowdin.
 Local per-file rules can be added to the config file in your project.
+
 ```
 files:
   -
@@ -149,7 +150,7 @@ files:
     translation: /locale/%two_letters_code%/**/%original_file_name%
     ignore:
       - /locale/en/templates
-      - /locale/en/workflow
+      - /locale/en/**/test-*.po
 
 ```
 
