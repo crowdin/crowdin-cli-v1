@@ -151,7 +151,23 @@ files:
     ignore:
       - /locale/en/templates
       - /locale/en/**/test-*.po
+      - /locale/en/**/[^abc]*.po
 
+```
+
+### Preserving directories hierarchy
+
+By default CLI tool tries to optimize your Crowdin project hierarchy and do not repeats complete path of local files online. In case you need to keep directories structure same at Crowdin and locally you can add `preserve_hierarchy: true` option in main section of the configuration file. 
+
+Sample configuration below:
+
+```
+---
+project_identifier: test
+api_key: KeepTheAPIkeySecret
+base_url: http://api.crowdin.net
+base_path: /path/to/your/project
+preserve_hierarchy: true
 ```
 
 ### Uploading CSV files via API
