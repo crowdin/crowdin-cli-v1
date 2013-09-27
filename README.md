@@ -93,15 +93,15 @@ Here's patterns you can use:
 
  Match all directories recursively. Note that you can use `**` in `source` and in `translation` pattern. When using `**` in `translation` pattern it will always contain sub-path from `source` for certain file. The mask `**` can be used only once in the pattern and must be surrounded by backslashes `/`.
 
-* ? (question mark)
+* `?` (question mark)
 
  Matches any one character.
 
-* [set]
+* `[set]`
 
  Matches any one character in set. Behaves exactly like character sets in `Regexp`, including set negation (`[^a-z]`).
 
-* \ (backslash)
+* `\` (backslash)
 
  Escapes the next metacharacter.
 
