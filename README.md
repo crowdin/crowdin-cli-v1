@@ -87,11 +87,23 @@ Here's patterns you can use:
 
 * `*` (asterisk)
 
- Match zero or more characters in file name. A glob consisting of only the asterisk and no other characters will match all files in the directory. If you specified a `*.json` it will include all files like `messages.json`, `about_us.json` and anything that ends with `.json`. 
+ Match zero or more characters in file name. A glob consisting of only the asterisk and no other characters will match all files in the directory. If you specified a `*.json` it will include all files like `messages.json`, `about_us.json` and anything that ends with `.json`.c* will match all files beginning with c; `*c` will match all files ending with c; and `*c*` will match all files that have c in them (including at the beginning or end). Equivalent to `/ .* /x` in regexp.
 
 * `**` (doubled asterisk)
 
  Match all directories recursively. Note that you can use `**` in `source` and in `translation` pattern. When using `**` in `translation` pattern it will always contain sub-path from `source` for certain file. The mask `**` can be used only once in the pattern and must be surrounded by backslashes `/`.
+
+* ? (question mark)
+
+ Matches any one character.
+
+* [set]
+
+ Matches any one character in set. Behaves exactly like character sets in `Regexp`, including set negation (`[^a-z]`).
+
+* \ (backslash)
+
+ Escapes the next metacharacter.
 
  Say, you can have source: `/en/**/*.po` to upload all `*.po` files to Crowdin recursively. `translation` pattern will be `/translations/%two_letters_code%/**/%original_file_name%'`.
 

@@ -131,16 +131,16 @@ def translate_pattern_to_regexp(pat)
         res[-1] = '(\/)?(?<double_asterisk>.*)?'
         i = j + 1
       else
-        res << '(.*)'
+        res = res + '.*'
       end
     elsif c == '?'
-      res << '.'
+      res = res + '.'
     elsif c == '['
       j = i
       # The following two statements check if the sequence we stumbled
-      # upon is '[]' or '[!]' because those are not valid character
+      # upon is '[]' or '[^]' because those are not valid character
       # classes.
-      if j < n and pat[j] == '!'
+      if j < n and pat[j] == '^'
         j = j + 1
       end
       if j < n and pat[j] == ']'
@@ -157,11 +157,11 @@ def translate_pattern_to_regexp(pat)
       else
         stuff = pat[i...j].gsub('\\', '\\\\')
         i = j + 1
-        if stuff[0] == '^'
-          stuff = '^' + stuff[1..-1]
+        #if stuff[0] == '!'
+        #  stuff = '^' + stuff[1..-1]
         #elsif stuff[0] == '^'
         #  stuff = '\\' + stuff
-        end
+        #end
         res = "#{res}[#{stuff}]"
       end
     else
@@ -169,7 +169,7 @@ def translate_pattern_to_regexp(pat)
     end
   end
 
-  return Regexp.new(res)
+  return Regexp.new(res + '$')
 end
 
 def android_locale_code(locale_code)
