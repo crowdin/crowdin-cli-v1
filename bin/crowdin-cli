@@ -324,7 +324,7 @@ command :upload do |c|
               end
             elsif File.fnmatch?(file['source'], dest, File::FNM_PATHNAME)
               next if ignores.any?{ |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
-              
+
               dest_files << dest
 
               export_pattern = construct_export_pattern(dest, file['source'], file['translation'])
