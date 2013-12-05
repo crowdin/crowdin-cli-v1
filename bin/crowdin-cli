@@ -374,8 +374,10 @@ EOS
           params = {}
           params[:scheme] = file.delete(:sheme)
           params[:first_line_contains_header] = file.delete(:first_line_contains_header)
+          params[:update_option] = file.delete(:update_option) # 'update_without_changes' or 'update_as_unapproved'
 
           resp = @crowdin.update_file([] << file, params)
+
           case resp['files'].first[1]
           when 'skipped'
             puts "\rUpdating source file `#{file[:dest]}' - Skipped"
@@ -397,6 +399,7 @@ EOS
         params[:first_line_contains_header] = file.delete(:first_line_contains_header)
 
         resp = @crowdin.add_file([] << file, params)
+
         puts "\rUploading source file `#{file[:dest]}' - OK"
       end
 
