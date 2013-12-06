@@ -9,6 +9,7 @@ require 'crowdin-cli'
 # Setup i18n
 # tell the I18n library where to find your translations
 I18n.load_path += Dir[Pathname(__FILE__).dirname.expand_path + '../locales/*.yml']
+I18n.enforce_available_locales = false
 I18n.locale = :en
 
 # Return +hierarchy+ of directories and files in Crowdin project
