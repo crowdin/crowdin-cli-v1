@@ -309,6 +309,10 @@ command :upload do |c|
 
           local_file = { dest: dest, source: File.join(@base_path, file['source']), export_pattern: file['translation'] }
 
+          if file['title']
+            local_file[:title] = file['title']
+          end
+
           local_file.merge!({ sheme: file['scheme'] }) if file.has_key?('scheme')
           local_file.merge!({ first_line_contains_header: file['first_line_contains_header'] }) if file.has_key?('first_line_contains_header')
           local_file.merge!({ update_option: file['update_option'] }) if file.has_key?('update_option')
