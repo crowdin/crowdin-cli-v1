@@ -564,6 +564,8 @@ command :download do |c|
   c.action do |global_options ,options, args|
     language = options[:language]
 
+    supported_languages = @crowdin.supported_languages
+
     project_info = @crowdin.project_info
 
     remote_project_tree = get_remote_files_hierarchy(project_info['files'])
@@ -571,7 +573,11 @@ command :download do |c|
     project_languages = project_info['languages'].collect{ |h| h['code'] }
 
     if @jipt_language
-      project_languages << @jipt_language # crowdin_language_code
+      if supported_languages.find{ |lang| lang['crowdin_code'] == @jipt_language }
+        project_languages << @jipt_language # crowdin_language_code
+      else
+        exit_now!("invalid jipt language `#{@jipt_language}`")
+      end
     end
 
     if language != 'all'
@@ -584,8 +590,6 @@ command :download do |c|
 
     # use export API method before to download the most recent translations
     @crowdin.export_translations
-
-    supported_languages = @crowdin.supported_languages
 
     source_language = project_info['details']['source_language']['code']
     source_language = supported_languages.find{ |lang| lang['crowdin_code'] == source_language }
