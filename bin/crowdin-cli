@@ -569,6 +569,11 @@ command :download do |c|
     remote_project_tree = get_remote_files_hierarchy(project_info['files'])
 
     project_languages = project_info['languages'].collect{ |h| h['code'] }
+
+    if @jipt_language
+      project_languages << @jipt_language # crowdin_language_code
+    end
+
     if language != 'all'
       if project_languages.include?(language)
         project_languages = [] << language
@@ -717,7 +722,7 @@ EOS
       end
     end
 
-  end # @config['files']
+  end #@config['files']
 
   if @config['base_path']
     @base_path = @config['base_path']
@@ -740,6 +745,11 @@ EOS
 Parameter `preserve_hierarchy` allows values of true or false.
 EOS
     end
+  end
+
+  @jipt_language = nil
+  if @config['jipt_language']
+    @jipt_language = @config['jipt_language']
   end
 
   Crowdin::API.log = Logger.new($stderr) if globals[:verbose]
