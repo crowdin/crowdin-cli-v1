@@ -79,7 +79,7 @@ def export_pattern_to_path(path, export_pattern, lang, languages_mapping = nil)
   placeholders = pattern.inject([]){ |memo, h| memo << h.first[/%(.*)%/, 1] }
 
   unless languages_mapping.nil?
-    pattern = Hash[pattern.map{ |placeholder, str| [
+    pattern = Hash[pattern.map { |placeholder, str| [
       placeholder,
       (languages_mapping[placeholder[/%(.*)%/, 1]][lang['crowdin_code']] rescue nil) || str]
     }]
@@ -245,8 +245,57 @@ def unzip_file_with_translations(zipfile_name, dest_path, files_list)
 
   unless unmatched_files.empty?
     puts "Warning: Downloaded translations does not match current project configuration. Some of the resulted files will be omitted."
-    unmatched_files.each{ |file| puts " - `#{file}'" }
+    unmatched_files.each { |file| puts " - `#{file}'" }
     puts "Crowdin has internal caching mechanisms that prevents us from overload. Please try to download translations later."
+  end
+end
+
+# Build a Hash tree from Array of +filenames*
+#
+def build_hash_tree(filenames)
+  files_tree = filenames.inject({}) { |h, i| t = h; i.split("/").each { |n| t[n] ||= {}; t = t[n] }; h }
+end
+
+# Box-drawing character - https://en.wikipedia.org/wiki/Box-drawing_character
+# ├  └  ─  │
+#
+def display_tree(files_tree, level = -1, branches = [])
+  tab = ' ' * 4
+  level += 1
+
+  files_tree.each_with_index do |(key, val), index|
+    if val.empty? # this is a file
+      result = branches.take(level).inject('') { |s, i| s << (i == 1 ? '│   ': '    ') }
+
+      if index == files_tree.length - 1
+        # this is a last element
+        result << '└' + '── ' + key
+      else
+        result << '├' + '── ' + key
+      end
+
+      puts result
+    else # this is directory
+      if key == '' # root directory
+        result = '.'
+      else
+        result = branches.take(level).inject('') { |s, i| s << (i == 1 ? '│   ' : '    ') }
+        if index == files_tree.length - 1
+          # this is a last element
+          result << '└' + '── ' + key
+
+          branches[level] = 0
+        else
+          result << '├' + '── ' + key
+
+          branches[level] = 1
+        end
+      end
+      puts result
+
+      # recursion \(^_^)/
+      display_tree(val, level, branches)
+    end
   end
 end
 
@@ -289,7 +338,7 @@ command :upload do |c|
 
       # Crowdin supported languages list
       supported_languages = @crowdin.supported_languages
-      source_language = supported_languages.find{ |lang| lang['crowdin_code'] == source_language }
+      source_language = supported_languages.find { |lang| lang['crowdin_code'] == source_language }
 
       remote_project_tree = get_remote_files_hierarchy(project_info['files'])
 
@@ -319,13 +368,13 @@ command :upload do |c|
             dest = source_path.sub(@base_path, '') # relative path in Crowdin
 
             if File.directory?(source_path)
-              if ignores.any?{ |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
+              if ignores.any? { |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
                 Find.prune # Don't look any further into this directory
               else
                 next
               end
             elsif File.fnmatch?(file['source'], dest, File::FNM_PATHNAME)
-              next if ignores.any?{ |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
+              next if ignores.any? { |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
 
               dest_files << dest
 
@@ -354,9 +403,9 @@ EOS
 
       common_dir = @preserve_hierarchy ? '' : find_common_directory_path(dest_files)
 
-      local_project_tree = get_local_files_hierarchy(local_files.collect{ |h| h[:dest].sub(common_dir, '') })
+      local_project_tree = get_local_files_hierarchy(local_files.collect { |h| h[:dest].sub(common_dir, '') })
 
-      local_files.each{ |file| file[:dest].sub!(common_dir, '') }
+      local_files.each { |file| file[:dest].sub!(common_dir, '') }
 
       # Create directory tree
       #
@@ -371,7 +420,7 @@ EOS
         #
         # array containing elements common to the two arrays
         update_files = local_project_tree[:files] & remote_project_tree[:files]
-        files_for_upload = local_files.select{ |file| update_files.include?(file[:dest]) }
+        files_for_upload = local_files.select { |file| update_files.include?(file[:dest]) }
         files_for_upload.each do |file|
           print "Updating source file `#{file[:dest]}'"
 
@@ -394,7 +443,7 @@ EOS
       # Add new files to Crowdin project
       #
       add_files = local_project_tree[:files] - remote_project_tree[:files]
-      files_for_add = local_files.select{ |file| add_files.include?(file[:dest]) }
+      files_for_add = local_files.select { |file| add_files.include?(file[:dest]) }
       files_for_add.each do |file|
         print "Uploading source file `#{file[:dest]}'"
 
@@ -440,7 +489,7 @@ EOS
 
       remote_project_tree = get_remote_files_hierarchy(project_info['files'])
 
-      project_languages = project_info['languages'].collect{ |h| h['code'] }
+      project_languages = project_info['languages'].collect { |h| h['code'] }
       if language != 'all'
         if project_languages.include?(language)
           project_languages = [] << language
@@ -452,9 +501,9 @@ EOS
       supported_languages = @crowdin.supported_languages
 
       source_language = project_info['details']['source_language']['code']
-      source_language = supported_languages.find{ |lang| lang['crowdin_code'] == source_language }
+      source_language = supported_languages.find { |lang| lang['crowdin_code'] == source_language }
 
-      translation_languages = supported_languages.select{ |lang| project_languages.include?(lang['crowdin_code']) }
+      translation_languages = supported_languages.select { |lang| project_languages.include?(lang['crowdin_code']) }
 
       translated_files = Hash.new{ |hash, key| hash[key] = Array.new }
       dest_files = []
@@ -490,13 +539,13 @@ EOS
             dest = source_path.sub(@base_path, '') # relative path in Crowdin
 
             if File.directory?(source_path)
-              if ignores.any?{ |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
+              if ignores.any? { |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
                 Find.prune # Don't look any further into this directory
               else
                 next
               end
             elsif File.fnmatch?(file['source'], dest, File::FNM_PATHNAME)
-              next if ignores.any?{ |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
+              next if ignores.any? { |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
 
               dest_files << dest
 
@@ -573,7 +622,7 @@ command :download do |c|
     project_languages = project_info['languages'].collect{ |h| h['code'] }
 
     if @jipt_language
-      if supported_languages.find{ |lang| lang['crowdin_code'] == @jipt_language }
+      if supported_languages.find { |lang| lang['crowdin_code'] == @jipt_language }
         project_languages << @jipt_language # crowdin_language_code
       else
         exit_now!("invalid jipt language `#{@jipt_language}`")
@@ -592,9 +641,9 @@ command :download do |c|
     @crowdin.export_translations
 
     source_language = project_info['details']['source_language']['code']
-    source_language = supported_languages.find{ |lang| lang['crowdin_code'] == source_language }
+    source_language = supported_languages.find { |lang| lang['crowdin_code'] == source_language }
 
-    translation_languages = supported_languages.select{ |lang| project_languages.include?(lang['crowdin_code']) }
+    translation_languages = supported_languages.select { |lang| project_languages.include?(lang['crowdin_code']) }
 
     # keys is all possible files in .ZIP archive
     # values is resulted local files
@@ -629,13 +678,13 @@ command :download do |c|
           dest = source_path.sub(@base_path, '') # relative path in Crowdin
 
           if File.directory?(source_path)
-            if ignores.any?{ |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
+            if ignores.any? { |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
               Find.prune # Don't look any further into this directory
             else
               next
             end
           elsif File.fnmatch?(file['source'], dest, File::FNM_PATHNAME)
-            next if ignores.any?{ |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
+            next if ignores.any? { |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
 
             export_pattern = construct_export_pattern(dest, file['source'], file['translation'])
 
