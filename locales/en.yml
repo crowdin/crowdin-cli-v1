@@ -50,8 +50,24 @@ en:
                 desc: Automatically approve uploaded translations
       download:
         desc: Download latest translations from Crowdin and put them to the right places in your project
+        long_desc: |
+          Download latest translations from Crowdin and put them to the right places in your project
         flags:
           language:
             desc: |
               If the option is defined the translations will be downloaded for single specified language.
               Othervice (by default) translations are downloaded for all languages
+      list:
+        desc: Show a list of files (the current project)
+        long_desc: |
+          List information about the files. List only those files that match the wild-card pattern
+        commands:
+          project:
+            desc: List information about the files that already exists in current project
+          sources:
+            desc: List information about the sources files in current project that match the wild-card pattern
+          translations:
+            desc: List information about the translations files in current project that match the wild-card pattern
+        switches:
+          tree:
+            desc: list contents of directories in a tree-like format

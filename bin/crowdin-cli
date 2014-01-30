@@ -553,11 +553,49 @@ EOS
 
 end
 
+desc I18n.t('app.commands.list.desc')
+long_desc I18n.t('app.commands.list.long_desc')
+command :list do |ls_cmd|
+  ls_cmd.desc I18n.t('app.commands.list.switches.tree.desc')
+  ls_cmd.switch ['tree'], :negatable => false
+
+  ls_cmd.desc I18n.t('app.commands.list.commands.project.desc')
+  ls_cmd.command :project do |proj_cmd|
+    proj_cmd.action do |global_options,options,args|
+      project_info = @crowdin.project_info
+      remote_project_tree = get_remote_files_hierarchy(project_info['files'])
+
+      if options[:tree]
+        #
+      else
+        puts remote_project_tree[:files]
+      end
+    end
+  end
+
+  ls_cmd.desc I18n.t('app.commands.list.commands.sources.desc')
+  ls_cmd.command :sources do |src_cmd|
+    src_cmd.action do |global_options,options,args|
+      #
+    end
+  end
+
+  ls_cmd.desc I18n.t('app.commands.list.commands.translations.desc')
+  ls_cmd.command :translations do |trans_cmd|
+    trans_cmd.action do |global_options,options,args|
+      #
+    end
+  end
+
+  ls_cmd.default_command :project
+end
+
 desc I18n.t('app.commands.download.desc')
 #arg_name 'Describe arguments to download here'
 command :download do |c|
 
   c.desc I18n.t('app.commands.download.flags.language.desc')
+  c.long_desc I18n.t('app.commands.download.flags.language.long_desc')
   c.arg_name 'language_code'
   c.flag [:l, :language], :default_value => 'all'
 
