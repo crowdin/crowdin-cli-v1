@@ -229,7 +229,6 @@ def unzip_file_with_translations(zipfile_name, dest_path, files_list)
 
   Zip::File.open(zipfile_name) do |zipfile|
     zipfile.select{ |zip_entry| zip_entry.file? }.each do |f|
-      # XXX
       # `f' - relative path in archive
       file = files_list[f.name]
       if file
@@ -457,7 +456,7 @@ EOS
       end
 
     end # action
-  end # command
+  end # upload sources
 
   c.desc I18n.t('app.commands.upload.commands.translations.desc')
   c.long_desc I18n.t('app.commands.upload.commands.translations.long_desc')
@@ -489,8 +488,9 @@ EOS
 
       remote_project_tree = get_remote_files_hierarchy(project_info['files'])
 
-      project_languages = project_info['languages'].collect { |h| h['code'] }
-      if language != 'all'
+      if language == 'all'
+        project_languages = project_info['languages'].collect { |h| h['code'] }
+      else
         if project_languages.include?(language)
           project_languages = [] << language
         else
@@ -598,7 +598,7 @@ EOS
       end
 
     end # action
-  end # command
+  end # upload translations
 
 end
 
@@ -611,7 +611,7 @@ command :list do |ls_cmd|
     proj_cmd.desc I18n.t('app.commands.list.switches.tree.desc')
     proj_cmd.switch ['tree'], :negatable => false
 
-    proj_cmd.action do |global_options,options,args|
+    proj_cmd.action do |global_options, options, args|
       project_info = @crowdin.project_info
       remote_project_tree = get_remote_files_hierarchy(project_info['files'])
 
@@ -692,17 +692,17 @@ command :list do |ls_cmd|
         puts local_project_tree[:files]
       end
     end
-  end
+  end # list sources
 
   ls_cmd.desc I18n.t('app.commands.list.commands.translations.desc')
   ls_cmd.command :translations do |trans_cmd|
     trans_cmd.action do |global_options, options, args|
-
+      #
     end
-  end
+  end # list translations
 
   #ls_cmd.default_command :project
-end
+end # list
 
 desc I18n.t('app.commands.download.desc')
 #arg_name 'Describe arguments to download here'
@@ -722,17 +722,17 @@ command :download do |c|
 
     remote_project_tree = get_remote_files_hierarchy(project_info['files'])
 
-    project_languages = project_info['languages'].collect{ |h| h['code'] }
+    if language == 'all'
+      project_languages = project_info['languages'].collect{ |h| h['code'] }
 
-    if @jipt_language
-      if supported_languages.find { |lang| lang['crowdin_code'] == @jipt_language }
-        project_languages << @jipt_language # crowdin_language_code
-      else
-        exit_now!("invalid jipt language `#{@jipt_language}`")
+      if @jipt_language
+        if supported_languages.find { |lang| lang['crowdin_code'] == @jipt_language }
+          project_languages << @jipt_language # crowdin_language_code
+        else
+          exit_now!("invalid jipt language `#{@jipt_language}`")
+        end
       end
-    end
-
-    if language != 'all'
+    else
       if project_languages.include?(language)
         project_languages = [] << language
       else
@@ -814,9 +814,9 @@ command :download do |c|
       tempfile.close
       tempfile.unlink # delete the tempfile
     end
-  end
 
-end
+  end # action
+end # download
 
 pre do |globals ,command, options, args|
   # Pre logic here
