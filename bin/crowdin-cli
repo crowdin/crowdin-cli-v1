@@ -775,8 +775,6 @@ command :download do |c|
 
     project_info = @crowdin.project_info
 
-    remote_project_tree = get_remote_files_hierarchy(project_info['files'])
-
     if language == 'all'
       project_languages = project_info['languages'].collect{ |h| h['code'] }
 
