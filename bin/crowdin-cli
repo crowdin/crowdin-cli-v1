@@ -696,8 +696,63 @@ command :list do |ls_cmd|
 
   ls_cmd.desc I18n.t('app.commands.list.commands.translations.desc')
   ls_cmd.command :translations do |trans_cmd|
+    trans_cmd.desc I18n.t('app.commands.list.switches.tree.desc')
+    trans_cmd.switch ['tree'], :negatable => false
+
     trans_cmd.action do |global_options, options, args|
-      #
+      project_info = @crowdin.project_info
+
+      project_languages = project_info['languages'].collect{ |h| h['code'] }
+
+      supported_languages = @crowdin.supported_languages
+      translation_languages = supported_languages.select { |lang| project_languages.include?(lang['crowdin_code']) }
+
+      translation_files = []
+      @config['files'].each do |file|
+        languages_mapping = file['languages_mapping'] # Hash or NilClass
+
+        ignores = file['ignore'] || []
+
+        if File.exists?(File.join(@base_path, file['source']))
+          dest = file['source'].sub("#{@base_path}", '')
+
+          translation_languages.each do |lang|
+            local_file  = export_pattern_to_path(dest, file['translation'], lang, languages_mapping)
+            translations_files <<  local_file
+          end
+
+        else
+          Find.find(@base_path) do |source_path|
+            dest = source_path.sub(@base_path, '') # relative path in Crowdin
+
+            if File.directory?(source_path)
+              if ignores.any? { |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
+                Find.prune # Don't look any further into this directory
+              else
+                next
+              end
+            elsif File.fnmatch?(file['source'], dest, File::FNM_PATHNAME)
+              next if ignores.any? { |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
+
+              export_pattern = construct_export_pattern(dest, file['source'], file['translation'])
+
+              translation_languages.each do |lang|
+                local_file  = export_pattern_to_path(dest, export_pattern, lang, languages_mapping)
+                translation_files << local_file
+              end
+
+            end
+          end # Find
+        end # if
+      end # @config['files']
+
+      if options[:tree]
+        tree = build_hash_tree(translation_files)
+        display_tree(tree)
+      else
+        puts translation_files
+      end
+
     end
   end # list translations
 
