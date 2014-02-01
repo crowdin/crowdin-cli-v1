@@ -603,6 +603,118 @@ EOS
 
 end
 
+desc I18n.t('app.commands.download.desc')
+#arg_name 'Describe arguments to download here'
+command :download do |c|
+
+  c.desc I18n.t('app.commands.download.flags.language.desc')
+  c.long_desc I18n.t('app.commands.download.flags.language.long_desc')
+  c.arg_name 'language_code'
+  c.flag [:l, :language], :default_value => 'all'
+
+  c.action do |global_options ,options, args|
+    language = options[:language]
+
+    supported_languages = @crowdin.supported_languages
+
+    project_info = @crowdin.project_info
+
+    if language == 'all'
+      project_languages = project_info['languages'].collect{ |h| h['code'] }
+
+      if @jipt_language
+        if supported_languages.find { |lang| lang['crowdin_code'] == @jipt_language }
+          project_languages << @jipt_language # crowdin_language_code
+        else
+          exit_now!("invalid jipt language `#{@jipt_language}`")
+        end
+      end
+    else
+      if project_languages.include?(language)
+        project_languages = [] << language
+      else
+        exit_now!("language '#{language}' doesn't exist in a project")
+      end
+    end
+
+    # use export API method before to download the most recent translations
+    @crowdin.export_translations
+
+    source_language = project_info['details']['source_language']['code']
+    source_language = supported_languages.find { |lang| lang['crowdin_code'] == source_language }
+
+    translation_languages = supported_languages.select { |lang| project_languages.include?(lang['crowdin_code']) }
+
+    # keys is all possible files in .ZIP archive
+    # values is resulted local files
+    downloadable_files_hash = {}
+
+    @config['files'].each do |file|
+      languages_mapping = file['languages_mapping'] # Hash or NilClass
+
+      ignores = file['ignore'] || []
+
+      # CSV files only (default: false)
+      multilingual_spreadsheet = file['multilingual_spreadsheet'] || false
+
+      if multilingual_spreadsheet
+        file_translation_languages = [] << source_language
+      else
+        file_translation_languages = translation_languages
+      end
+
+      if File.exists?(File.join(@base_path, file['source']))
+        dest = file['source'].sub("#{@base_path}", '')
+
+        file_translation_languages.each do |lang|
+          zipped_file = export_pattern_to_path(dest, file['translation'], lang)
+          zipped_file.sub!(/^\//, '')
+          local_file  = export_pattern_to_path(dest, file['translation'], lang, languages_mapping)
+          downloadable_files_hash[zipped_file] = local_file
+        end
+
+      else
+        Find.find(@base_path) do |source_path|
+          dest = source_path.sub(@base_path, '') # relative path in Crowdin
+
+          if File.directory?(source_path)
+            if ignores.any? { |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
+              Find.prune # Don't look any further into this directory
+            else
+              next
+            end
+          elsif File.fnmatch?(file['source'], dest, File::FNM_PATHNAME)
+            next if ignores.any? { |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
+
+            export_pattern = construct_export_pattern(dest, file['source'], file['translation'])
+
+            file_translation_languages.each do |lang|
+              zipped_file = export_pattern_to_path(dest, export_pattern, lang)
+              zipped_file.sub!(/^\//, '')
+              local_file  = export_pattern_to_path(dest, export_pattern, lang, languages_mapping)
+              downloadable_files_hash[zipped_file] = local_file
+            end
+
+          end
+        end # Find
+      end # if
+    end # @config['files']
+
+    ##
+    tempfile = Tempfile.new(language)
+    zipfile_name = tempfile.path
+    begin
+      @crowdin.download_translation(language, output: zipfile_name)
+
+      unzip_file_with_translations(zipfile_name, @base_path, downloadable_files_hash)
+    ensure
+      tempfile.close
+      tempfile.unlink # delete the tempfile
+    end
+
+  end # action
+end # download
+
 desc I18n.t('app.commands.list.desc')
 long_desc I18n.t('app.commands.list.long_desc')
 command :list do |ls_cmd|
@@ -759,118 +871,6 @@ command :list do |ls_cmd|
 
   #ls_cmd.default_command :project
 end # list
-
-desc I18n.t('app.commands.download.desc')
-#arg_name 'Describe arguments to download here'
-command :download do |c|
-
-  c.desc I18n.t('app.commands.download.flags.language.desc')
-  c.long_desc I18n.t('app.commands.download.flags.language.long_desc')
-  c.arg_name 'language_code'
-  c.flag [:l, :language], :default_value => 'all'
-
-  c.action do |global_options ,options, args|
-    language = options[:language]
-
-    supported_languages = @crowdin.supported_languages
-
-    project_info = @crowdin.project_info
-
-    if language == 'all'
-      project_languages = project_info['languages'].collect{ |h| h['code'] }
-
-      if @jipt_language
-        if supported_languages.find { |lang| lang['crowdin_code'] == @jipt_language }
-          project_languages << @jipt_language # crowdin_language_code
-        else
-          exit_now!("invalid jipt language `#{@jipt_language}`")
-        end
-      end
-    else
-      if project_languages.include?(language)
-        project_languages = [] << language
-      else
-        exit_now!("language '#{language}' doesn't exist in a project")
-      end
-    end
-
-    # use export API method before to download the most recent translations
-    @crowdin.export_translations
-
-    source_language = project_info['details']['source_language']['code']
-    source_language = supported_languages.find { |lang| lang['crowdin_code'] == source_language }
-
-    translation_languages = supported_languages.select { |lang| project_languages.include?(lang['crowdin_code']) }
-
-    # keys is all possible files in .ZIP archive
-    # values is resulted local files
-    downloadable_files_hash = {}
-
-    @config['files'].each do |file|
-      languages_mapping = file['languages_mapping'] # Hash or NilClass
-
-      ignores = file['ignore'] || []
-
-      # CSV files only (default: false)
-      multilingual_spreadsheet = file['multilingual_spreadsheet'] || false
-
-      if multilingual_spreadsheet
-        file_translation_languages = [] << source_language
-      else
-        file_translation_languages = translation_languages
-      end
-
-      if File.exists?(File.join(@base_path, file['source']))
-        dest = file['source'].sub("#{@base_path}", '')
-
-        file_translation_languages.each do |lang|
-          zipped_file = export_pattern_to_path(dest, file['translation'], lang)
-          zipped_file.sub!(/^\//, '')
-          local_file  = export_pattern_to_path(dest, file['translation'], lang, languages_mapping)
-          downloadable_files_hash[zipped_file] = local_file
-        end
-
-      else
-        Find.find(@base_path) do |source_path|
-          dest = source_path.sub(@base_path, '') # relative path in Crowdin
-
-          if File.directory?(source_path)
-            if ignores.any? { |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
-              Find.prune # Don't look any further into this directory
-            else
-              next
-            end
-          elsif File.fnmatch?(file['source'], dest, File::FNM_PATHNAME)
-            next if ignores.any? { |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
-
-            export_pattern = construct_export_pattern(dest, file['source'], file['translation'])
-
-            file_translation_languages.each do |lang|
-              zipped_file = export_pattern_to_path(dest, export_pattern, lang)
-              zipped_file.sub!(/^\//, '')
-              local_file  = export_pattern_to_path(dest, export_pattern, lang, languages_mapping)
-              downloadable_files_hash[zipped_file] = local_file
-            end
-
-          end
-        end # Find
-      end # if
-    end # @config['files']
-
-    ##
-    tempfile = Tempfile.new(language)
-    zipfile_name = tempfile.path
-    begin
-      @crowdin.download_translation(language, output: zipfile_name)
-
-      unzip_file_with_translations(zipfile_name, @base_path, downloadable_files_hash)
-    ensure
-      tempfile.close
-      tempfile.unlink # delete the tempfile
-    end
-
-  end # action
-end # download
 
 pre do |globals ,command, options, args|
   # Pre logic here
