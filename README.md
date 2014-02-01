@@ -290,6 +290,25 @@ Download latest translations from Crowdin:
 $ crowdin-cli download
 ```
 
+List information about the files that already exists in current project:
+```
+$ crowdin-cli list project
+```
+
+List information about the sources files in current project that match the wild-card pattern:
+```
+$ crowdin-cli list sources
+```
+
+List information about the translations files in current project that match the wild-card pattern:
+```
+$ crowdin-cli list translations
+```
+
+By default, `list` command print a list of all the files
+Also, `list` accept `-tree` optional argument to list contents in a tree-like format.
+
+
 Get help on `upload` command:
 ```
 $ crowdin-cli help upload
