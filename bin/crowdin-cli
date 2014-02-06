@@ -244,7 +244,7 @@ def unzip_file_with_translations(zipfile_name, dest_path, files_list)
   end
 
   unless unmatched_files.empty?
-    puts "Warning: Downloaded translations does not match current project configuration. Some of the resulted files will be omitted."
+    puts "Warning: Downloaded translations do not match current project configuration. Some of the resulted files will be omitted."
     unmatched_files.each { |file| puts " - `#{file}'" }
     puts "Crowdin has internal caching mechanisms that prevents us from overload. Please try to download translations later."
   end
@@ -489,8 +489,10 @@ EOS
 
       remote_project_tree = get_remote_files_hierarchy(project_info['files'])
 
+      project_languages = project_info['languages'].collect { |h| h['code'] }
+
       if language == 'all'
-        project_languages = project_info['languages'].collect { |h| h['code'] }
+        # do nothing
       else
         if project_languages.include?(language)
           project_languages = [] << language
@@ -619,9 +621,9 @@ command :download do |c|
 
     project_info = @crowdin.project_info
 
-    if language == 'all'
-      project_languages = project_info['languages'].collect{ |h| h['code'] }
+    project_languages = project_info['languages'].collect{ |h| h['code'] }
 
+    if language == 'all'
       if @jipt_language
         if supported_languages.find { |lang| lang['crowdin_code'] == @jipt_language }
           project_languages << @jipt_language # crowdin_language_code
