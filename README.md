@@ -5,13 +5,13 @@
 [Crowdin.net Homepage](http://crowdin.net) | 
 [crowdin-api RubyDoc](http://rubydoc.info/github/crowdin/crowdin-api/)
 
-A Command-Line Interface to sync files between your computer/server and [Crowdin](crowdin.net).
+A Command-Line Interface to sync files between local computer/server and [Crowdin](crowdin.net).
 
-It is cross-platform and runs in a terminal (Linux, MacOS X) or in cmd.exe (Windows).
+It is cross-platform and can be run in a terminal (Linux, MacOS X) or in cmd.exe (Windows).
 
 ![ScreenShot](https://raw.github.com/crowdin/crowdin-cli/master/screenshot.png)
 
-> **WARNING**: This is a development version: It contains the latest changes, but may also have severe known issues, including crashes and data loss situations. In fact, it may not work at all.
+> **WARNING**: This is a development version: It contains the latest changes, but may also have several known issues, including crashes and data loss situations. In fact, it may not work at all.
 
 ## Installation
 
@@ -26,16 +26,16 @@ And then execute:
 $ bundle
 ```
 
-Or install it yourself as:
+Or install it manually as:
 ```
 $ gem install crowdin-cli
 ```
 
 ## Configuration
 
-Now that the tool in installed, you'll have to configure your project. Basically, `crowdin-cli` is to be run on a project directory, and looks for a `crowdin.yaml` file containing your project information.
+When the tool is installed, you would have to configure your project. Basically, `crowdin-cli` go through project directory, and looks for `crowdin.yaml` file that contains project information.
 
-Create a `crowdin.yaml` YAML file in your root project directory with the following structure:
+Create `crowdin.yaml` YAML file in your root project directory with the following structure:
 
 ```
 ---
@@ -53,10 +53,10 @@ files:
 * `api_key` - Crowdin Project API key
 * `project_identifier` - Crowdin project name
 * `base_url` - (default: http://api.crowdin.net)
-* `base_path` - defines what directory we have to scan(default: current directory)
+* `base_path` - defines what directory have to be scaned(default: current directory)
 * `files`
-  * `source` - defines only files we will upload as sources
-  * `translation` - attribute defines where translations should be placed after downloading (also we have to check those path to detect and upload existing translations)
+  * `source` - defines only files that should be uploaded as sources
+  * `translation` - defines where translations should be placed after downloading (also the path have to be checked to detect and upload existing translations)
 
         Use the following placeholders to put appropriate variables into the resulting file name:
       * `%language%` - Language name (i.e. Ukrainian)
@@ -79,9 +79,9 @@ files:
           /locale/%two_letters_code%/LC_MESSAGES/%original_file_name%
           ```
 
-Also you can add and upload all directories mathing the pattern including all nested files and localizable files.
+Also you can add and upload all directories matching the pattern, including all nested files and localizable files.
 
-Example configuration provided above has 'source' and 'translation' attributes containing standard wildcards (also known as globbing patterns) to make it easier to work with multiple files. 
+Configuration example provided above has 'source' and 'translation' attributes containing standard wildcards (also known as globbing patterns) to make it easier to work with multiple files. 
 
 Here's patterns you can use:
 
@@ -91,7 +91,7 @@ Here's patterns you can use:
 
 * `**` (doubled asterisk)
 
- Match all directories recursively. Note that you can use `**` in `source` and in `translation` pattern. When using `**` in `translation` pattern it will always contain sub-path from `source` for certain file. The mask `**` can be used only once in the pattern and must be surrounded by backslashes `/`.
+ Match all the directories recursively. Note that you can use `**` in `source` and in `translation` pattern. When using `**` in `translation` pattern it will always contain sub-path from `source` for certain file. The mask `**` can be used only once in the pattern and must be surrounded by backslashes `/`.
 
 * `?` (question mark)
 
@@ -171,7 +171,7 @@ files:
 
 By default CLI tool tries to optimize your Crowdin project hierarchy and do not repeats complete path of local files online. In case you need to keep directories structure same at Crowdin and locally you can add `preserve_hierarchy: true` option in main section of the configuration file. 
 
-Sample configuration below:
+Configuration sample is below:
 
 ```
 ---
@@ -203,7 +203,7 @@ files:
 
 #### Multicolumn CSV
 
-In case when CSV file should contains translations to all target languages you can use per-file option `multilingual_spreadsheet`.
+In case CSV file contains translations to all target languages you can use per-file option `multilingual_spreadsheet`.
 
 CSV file example:
 ```
@@ -226,7 +226,7 @@ files:
 ```
 
 
-## Example Configurations
+## Configurations Examples
 
 ### GetText Project
 
@@ -271,7 +271,7 @@ files:
 
 ## Usage
 
-When the configuration file is created you are ready to start using `crowdin-cli` to manage your localization resources and automate files synchronization. 
+When the configuration file is created, you are ready to start using `crowdin-cli` to manage your localization resources and automate files synchronization. 
 
 We listed most typical commands that crowdin-cli is used for:
 
