@@ -207,13 +207,19 @@ end
 # @params [Array] paths set of strings representing directory paths
 #
 def find_common_directory_path(paths)
-  return paths.first.split('/').slice(0...-1).join('/') if paths.length <= 1
-  arr = paths.sort
-  first = arr.first.split('/')
-  last = arr.last.split('/')
-  i = 0
-  i += 1 while first[i] == last[i] && i <= first.length
-  first.slice(0, i).join('/')
+  case paths.length
+    when 0
+      return '/'
+    when 1
+      return paths.first.split('/').slice(0...-1).join('/')
+    else
+      arr = paths.sort
+      first = arr.first.split('/')
+      last = arr.last.split('/')
+      i = 0
+      i += 1 while first[i] == last[i] && i <= first.length
+      first.slice(0, i).join('/')
+  end
 end
 
 # Extract compressed files +files_list+ in a ZIP archive +zipfile_name+ to +dest_path+
