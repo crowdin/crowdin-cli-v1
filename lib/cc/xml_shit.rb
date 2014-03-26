@@ -180,7 +180,8 @@ if __FILE__ == $0
 
 =begin
   # write XML
-  _, _, _, *langs = "none,identifier,source_phrase,Ukrainian,Russian".split(',')
+  scheme = "none,identifier,source_phrase,Ukrainian,Russian"
+  _, _, _, *langs = scheme.split(',')
 
   xmlfile = File.open('strings.xml')
   xmldoc = REXML::Document.new(string)
