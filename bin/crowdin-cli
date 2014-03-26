@@ -364,7 +364,7 @@ command :upload do |c|
 
           local_file = { dest: dest, source: File.join(@base_path, file['source']), export_pattern: file['translation'] }
 
-          local_file.merge!({ sheme: file['scheme'] }) if file.has_key?('scheme')
+          local_file.merge!({ scheme: file['scheme'] }) if file.has_key?('scheme')
           local_file.merge!({ first_line_contains_header: file['first_line_contains_header'] }) if file.has_key?('first_line_contains_header')
           local_file.merge!({ update_option: file['update_option'] }) if file.has_key?('update_option')
 
@@ -388,7 +388,7 @@ command :upload do |c|
 
               local_file = { dest: dest, source: source_path, export_pattern: export_pattern }
 
-              local_file.merge!({ sheme: file['scheme'] }) if file.has_key?('scheme')
+              local_file.merge!({ scheme: file['scheme'] }) if file.has_key?('scheme')
               local_file.merge!({ first_line_contains_header: file['first_line_contains_header'] }) if file.has_key?('first_line_contains_header')
               local_file.merge!({ update_option: file['update_option'] }) if file.has_key?('update_option')
 
@@ -431,7 +431,7 @@ EOS
           print "Updating source file `#{file[:dest]}'"
 
           params = {}
-          params[:scheme] = file.delete(:sheme)
+          params[:scheme] = file.delete(:scheme)
           params[:first_line_contains_header] = file.delete(:first_line_contains_header)
           params[:update_option] = file.delete(:update_option) # 'update_without_changes' or 'update_as_unapproved'
 
@@ -454,7 +454,7 @@ EOS
         print "Uploading source file `#{file[:dest]}'"
 
         params = {}
-        params[:scheme] = file.delete(:sheme)
+        params[:scheme] = file.delete(:scheme)
         params[:first_line_contains_header] = file.delete(:first_line_contains_header)
 
         resp = @crowdin.add_file([] << file, params)
@@ -767,7 +767,7 @@ command :list do |ls_cmd|
 
           local_file = { dest: dest, source: File.join(@base_path, file['source']), export_pattern: file['translation'] }
 
-          local_file.merge!({ sheme: file['scheme'] }) if file.has_key?('scheme')
+          local_file.merge!({ scheme: file['scheme'] }) if file.has_key?('scheme')
           local_file.merge!({ first_line_contains_header: file['first_line_contains_header'] }) if file.has_key?('first_line_contains_header')
           local_file.merge!({ update_option: file['update_option'] }) if file.has_key?('update_option')
 
@@ -791,7 +791,7 @@ command :list do |ls_cmd|
 
               local_file = { dest: dest, source: source_path, export_pattern: export_pattern }
 
-              local_file.merge!({ sheme: file['scheme'] }) if file.has_key?('scheme')
+              local_file.merge!({ scheme: file['scheme'] }) if file.has_key?('scheme')
               local_file.merge!({ first_line_contains_header: file['first_line_contains_header'] }) if file.has_key?('first_line_contains_header')
               local_file.merge!({ update_option: file['update_option'] }) if file.has_key?('update_option')
 
