@@ -839,7 +839,7 @@ command :list do |ls_cmd|
 
           translation_languages.each do |lang|
             local_file  = export_pattern_to_path(dest, file['translation'], lang, languages_mapping)
-            translations_files <<  local_file
+            translation_files <<  local_file
           end
 
         else
