@@ -451,6 +451,47 @@ EOS
       add_files = local_project_tree[:files] - remote_project_tree[:files]
       files_for_add = local_files.select { |file| add_files.include?(file[:dest]) }
       files_for_add.each do |file|
+        ###
+        # Convert XML to CSV
+        csv_file = file[:dest].sub(/.[^.]+\z/, '.csv')
+        csv_file_path = file[:source].sub(/.[^.]+\z/, '.csv')
+
+        scheme = file[:scheme]
+        headers = scheme.split(',')
+        acceptable_values = ['identifier','source_phrase','source_or_translation','translation','context','max_length','none']
+
+        # replace crowdin_code with its associated language name
+        headers.map! do |value|
+          if acceptable_values.include?(value)
+            # do nothing
+          else
+            lang = supported_languages.find { |lang| lang['crowdin_code'] == value }
+            if lang
+              value = lang['name']
+            else
+              # do nothing. maybe error?
+            end
+          end
+          value
+        end
+
+        langs = headers.reject { |k| acceptable_values.include?(k) }
+
+        xmlfile = File.open(file[:source])
+        xml_string = xmlfile.read
+        xml_string.gsub!('&', '&amp;')
+
+        xml_data = XmlShit.xml_in(xml_string) #< array of hashes
+        csv = XmlShit.csv_out(xml_data, headers)
+
+        File.open(csv_file_path, 'w') { |f| f.write(csv) }
+
+        file[:dest] = csv_file
+        file[:source] = csv_file_path
+        file[:export_pattern].sub!(/.[^.]+\z/, '.csv')
+
+        ###
+
         print "Uploading source file `#{file[:dest]}'"
 
         params = {}
@@ -541,7 +582,7 @@ EOS
 
           file_translation_languages.each do |lang|
             source = export_pattern_to_path(dest, file['translation'], lang, languages_mapping)
-            translated_files[lang['crowdin_code']] << { source: File.join(@base_path, source), dest: dest }
+            translated_files[lang['crowdin_code']] << { source: File.join(@base_path, source), dest: dest, scheme: file['scheme'] }
           end
         else
           Find.find(@base_path) do |source_path|
@@ -562,7 +603,7 @@ EOS
 
               file_translation_languages.each do |lang|
                 source = export_pattern_to_path(dest, export_pattern, lang, languages_mapping)
-                translated_files[lang['crowdin_code']] << { source: File.join(@base_path, source), dest: dest }
+                translated_files[lang['crowdin_code']] << { source: File.join(@base_path, source), dest: dest, scheme: file['scheme'] }
               end
 
             end
@@ -584,6 +625,43 @@ EOS
       translated_files.each_pair do |language, files|
         files.each do |file|
           file[:dest] = file[:dest].sub(common_dir, '')
+
+          ###
+          # Convert XML to CSV
+          csv_file = file[:dest].sub(/.[^.]+\z/, '.csv')
+          csv_file_path = file[:source].sub(/.[^.]+\z/, '.csv')
+
+          scheme = file[:scheme]
+          headers = scheme.split(',')
+          acceptable_values = ['identifier','source_phrase','source_or_translation','translation','context','max_length','none']
+
+          # replace crowdin_code with its associated language name
+          headers.map! do |value|
+            if acceptable_values.include?(value)
+              # do nothing
+            else
+              lang = supported_languages.find { |lang| lang['crowdin_code'] == value }
+              if lang
+                value = lang['name']
+              else
+                # do nothing. maybe error?
+              end
+            end
+            value
+          end
+
+          xmlfile = File.open(file[:source])
+          xml_string = xmlfile.read
+          xml_string.gsub!('&', '&amp;')
+
+          xml_data = XmlShit.xml_in(xml_string) #< array of hashes
+          csv = XmlShit.csv_out(xml_data, headers)
+
+          File.open(csv_file_path, 'w') { |f| f.write(csv) }
+
+          file[:dest] = csv_file
+          file[:source] = csv_file_path
+          ###
 
           if remote_project_tree[:files].include?(file[:dest])
             if File.exist?(file[:source])
