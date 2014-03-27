@@ -58,9 +58,9 @@ class XmlShit
   # xpath_column::
   #   name of the column that contains xpath
   # langs::
-  #   hash
+  #   and array of columns name that contain language names
   #
-  def xml_out(csv, xml, xpath_column, langs = {})
+  def xml_out(csv, xml, xpath_column, langs)
     unless csv.is_a?(CSV)
       raise ArgumentError, "Could not parse CSV object of type: <#{string.class}>."
     end
