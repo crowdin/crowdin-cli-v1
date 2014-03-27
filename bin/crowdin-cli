@@ -731,6 +731,10 @@ command :download do |c|
 
     translation_languages = supported_languages.select { |lang| project_languages.include?(lang['crowdin_code']) }
 
+
+    translated_files = Hash.new{ |hash, key| hash[key] = Array.new }
+    dest_files = []
+
     # keys is all possible files in .ZIP archive
     # values is resulted local files
     downloadable_files_hash = {}
@@ -751,12 +755,15 @@ command :download do |c|
 
       if File.exists?(File.join(@base_path, file['source']))
         dest = file['source'].sub("#{@base_path}", '')
+        dest_files << dest
 
         file_translation_languages.each do |lang|
           zipped_file = export_pattern_to_path(dest, file['translation'], lang)
           zipped_file.sub!(/^\//, '')
           local_file  = export_pattern_to_path(dest, file['translation'], lang, languages_mapping)
           downloadable_files_hash[zipped_file] = local_file
+
+          translated_files[lang['crowdin_code']] << { source: File.join(@base_path, local_file), dest: dest, scheme: file['scheme'] }
         end
 
       else
@@ -779,12 +786,17 @@ command :download do |c|
               zipped_file.sub!(/^\//, '')
               local_file  = export_pattern_to_path(dest, export_pattern, lang, languages_mapping)
               downloadable_files_hash[zipped_file] = local_file
+
+              translated_files[lang['crowdin_code']] << { source: File.join(@base_path, local_file), dest: dest, scheme: file['scheme'] }
             end
 
           end
         end # Find
       end # if
     end # @config['files']
+
+    # XXX
+    downloadable_files_hash= Hash[ downloadable_files_hash.collect {|k,v| [k.sub(/.[^.]+\z/, '.csv'), v.sub(/.[^.]+\z/, '.csv')] } ]
 
     ##
     tempfile = Tempfile.new(language)
@@ -797,6 +809,69 @@ command :download do |c|
       tempfile.close
       tempfile.unlink # delete the tempfile
     end
+
+    ###
+    common_dir = @preserve_hierarchy ? '' : find_common_directory_path(dest_files)
+
+     translated_files.each_pair do |language, files|
+       files.each do |file|
+         file[:dest] = file[:dest].sub(common_dir, '')
+
+         ###
+         # Convert XML to CSV
+         csv_file = file[:dest].sub(/.[^.]+\z/, '.csv')
+         csv_file_path = file[:source].sub(/.[^.]+\z/, '.csv')
+
+         scheme = file[:scheme]
+         headers = scheme.split(',')
+         acceptable_values = ['identifier','source_phrase','source_or_translation','translation','context','max_length','none']
+
+         # replace crowdin_code with its associated language name
+         headers.map! do |value|
+           if acceptable_values.include?(value)
+             # do nothing
+           else
+             lang = supported_languages.find { |lang| lang['crowdin_code'] == value }
+             if lang
+               value = lang['name']
+             else
+               # do nothing. maybe error?
+             end
+           end
+           value
+         end
+
+         xmlfile = File.open(file[:source])
+         xml_string = xmlfile.read
+         xml_string.gsub!('&', '&amp;')
+
+         xmldoc = REXML::Document.new(xml_string)
+
+         csvfile = file[:source].sub(/.[^.]+\z/, '.csv')
+         csv = CSV.open(csvfile, headers: true)
+
+         scheme = file[:scheme]
+         headers = scheme.split(',')
+         acceptable_values = ['identifier','source_phrase','source_or_translation','translation','context','max_length','none']
+
+         langs = []
+         headers.each do |value|
+           if lang = supported_languages.find{ |lang| lang['crowdin_code'] == value }
+             langs << lang['name']
+           end
+         end
+
+         xpath_column = 'none'
+         xmldoc = XmlShit.xml_out(csv, xmldoc, xpath_column, langs)
+
+         # write xml
+         File.open(file[:source], 'w') do |xml_file|
+           xml_file << xmldoc
+         end
+         ###
+
+       end
+     end
 
   end # action
 end # download

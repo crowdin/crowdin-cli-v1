@@ -58,9 +58,9 @@ class XmlShit
   # xpath_column::
   #   name of the column that contains xpath
   # langs::
-  #   and array of columns name that contain languages
+  #   hash
   #
-  def xml_out(csv, xml, xpath_column, langs)
+  def xml_out(csv, xml, xpath_column, langs = {})
     unless csv.is_a?(CSV)
       raise ArgumentError, "Could not parse CSV object of type: <#{string.class}>."
     end
@@ -72,7 +72,7 @@ class XmlShit
       xpath = row[xpath_column]
       node = REXML::XPath.first(xml, xpath)
       langs.each do |lang|
-        unless row[lang].empty?
+        unless row[lang].nil? || row[lang].empty?
           unless node.elements[lang].nil?
             node.delete_element(lang)
           end
