@@ -413,6 +413,10 @@ EOS
 
       local_files.each { |file| file[:dest].sub!(common_dir, '') }
 
+      remote_project_tree[:files].map! do |file|
+        file.sub!(/.[^.]+\z/, '.xml')
+      end
+
       # Create directory tree
       #
       create_dirs = local_project_tree[:dirs] - remote_project_tree[:dirs]
@@ -428,6 +432,47 @@ EOS
         update_files = local_project_tree[:files] & remote_project_tree[:files]
         files_for_upload = local_files.select { |file| update_files.include?(file[:dest]) }
         files_for_upload.each do |file|
+          ###
+          # Convert XML to CSV
+          csv_file = file[:dest].sub(/.[^.]+\z/, '.csv')
+          csv_file_path = file[:source].sub(/.[^.]+\z/, '.csv')
+
+          scheme = file[:scheme]
+          headers = scheme.split(',')
+          acceptable_values = ['identifier','source_phrase','source_or_translation','translation','context','max_length','none']
+
+          # replace crowdin_code with its associated language name
+          headers.map! do |value|
+            if acceptable_values.include?(value)
+              # do nothing
+            else
+              lang = supported_languages.find { |lang| lang['crowdin_code'] == value }
+              if lang
+                value = lang['name']
+              else
+                # do nothing. maybe error?
+              end
+            end
+            value
+          end
+
+          langs = headers.reject { |k| acceptable_values.include?(k) }
+
+          xmlfile = File.open(file[:source])
+          xml_string = xmlfile.read
+          xml_string.gsub!('&', '&amp;')
+
+          xml_data = XmlShit.xml_in(xml_string) #< array of hashes
+          csv = XmlShit.csv_out(xml_data, headers)
+
+          File.open(csv_file_path, 'w') { |f| f.write(csv) }
+
+          file[:dest] = csv_file
+          file[:source] = csv_file_path
+          file[:export_pattern].sub!(/.[^.]+\z/, '.csv')
+
+          ###
+
           print "Updating source file `#{file[:dest]}'"
 
           params = {}
@@ -479,6 +524,7 @@ EOS
 
         xmlfile = File.open(file[:source])
         xml_string = xmlfile.read
+        xml_string.gsub!('&', '&amp;')
 
         xml_data = XmlShit.xml_in(xml_string) #< array of hashes
         csv = XmlShit.csv_out(xml_data, headers)
@@ -651,6 +697,7 @@ EOS
 
           xmlfile = File.open(file[:source])
           xml_string = xmlfile.read
+          xml_string.gsub!('&', '&amp;')
 
           xml_data = XmlShit.xml_in(xml_string) #< array of hashes
           csv = XmlShit.csv_out(xml_data, headers)
@@ -819,6 +866,7 @@ command :download do |c|
          # Convert XML to CSV
          xml_file = File.open(file[:source])
          xml_string = xml_file.read
+         xml_string.gsub!('&', '&amp;')
 
          xmldoc = REXML::Document.new(xml_string)
 
