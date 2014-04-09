@@ -460,7 +460,6 @@ EOS
 
           xmlfile = File.open(file[:source])
           xml_string = xmlfile.read
-          xml_string.gsub!('&', '&amp;')
 
           xml_data = XmlShit.xml_in(xml_string) #< array of hashes
           csv = XmlShit.csv_out(xml_data, headers)
@@ -524,7 +523,6 @@ EOS
 
         xmlfile = File.open(file[:source])
         xml_string = xmlfile.read
-        xml_string.gsub!('&', '&amp;')
 
         xml_data = XmlShit.xml_in(xml_string) #< array of hashes
         csv = XmlShit.csv_out(xml_data, headers)
@@ -697,7 +695,6 @@ EOS
 
           xmlfile = File.open(file[:source])
           xml_string = xmlfile.read
-          xml_string.gsub!('&', '&amp;')
 
           xml_data = XmlShit.xml_in(xml_string) #< array of hashes
           csv = XmlShit.csv_out(xml_data, headers)
@@ -866,7 +863,6 @@ command :download do |c|
          # Convert XML to CSV
          xml_file = File.open(file[:source])
          xml_string = xml_file.read
-         xml_string.gsub!('&', '&amp;')
 
          xmldoc = REXML::Document.new(xml_string)
 
