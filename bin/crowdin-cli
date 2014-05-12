@@ -359,10 +359,11 @@ command :upload do |c|
         ignores = file['ignore'] || []
 
         if File.exist?(File.join(@base_path, file['source']))
-          dest = file['source']
+          dest = file['dest'] || file['source']
+          type = file['type']
           dest_files << dest
 
-          local_file = { dest: dest, source: File.join(@base_path, file['source']), export_pattern: file['translation'] }
+          local_file = { dest: dest, source: File.join(@base_path, file['source']), export_pattern: file['translation'], type: type }
 
           local_file.merge!({ scheme: file['scheme'] }) if file.has_key?('scheme')
           local_file.merge!({ first_line_contains_header: file['first_line_contains_header'] }) if file.has_key?('first_line_contains_header')
@@ -434,6 +435,9 @@ EOS
           params[:scheme] = file.delete(:scheme)
           params[:first_line_contains_header] = file.delete(:first_line_contains_header)
           params[:update_option] = file.delete(:update_option) # 'update_without_changes' or 'update_as_unapproved'
+          if file[:type]
+            params[:type] = file[:type]
+          end
 
           resp = @crowdin.update_file([] << file, params)
 
@@ -456,6 +460,9 @@ EOS
         params = {}
         params[:scheme] = file.delete(:scheme)
         params[:first_line_contains_header] = file.delete(:first_line_contains_header)
+        if file[:type]
+          params[:type] = file[:type]
+        end
 
         resp = @crowdin.add_file([] << file, params)
 
