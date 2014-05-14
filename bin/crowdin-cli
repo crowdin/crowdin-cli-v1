@@ -236,12 +236,12 @@ def unzip_file_with_translations(zipfile_name, dest_path, files_list)
 
   Zip::File.open(zipfile_name) do |zipfile|
     zipfile.select{ |zip_entry| zip_entry.file? }.each do |f|
-      # `f' - relative path in archive
+      # 'f' - relative path in archive
       file = files_list[f.name]
       if file
         fpath = File.join(dest_path, file)
         FileUtils.mkdir_p(File.dirname(fpath))
-        puts "Download: `#{file}'"
+        puts "Download: '#{file}'"
         zipfile.extract(f, fpath)
       else
         unmatched_files << f
@@ -417,7 +417,7 @@ EOS
       #
       create_dirs = local_project_tree[:dirs] - remote_project_tree[:dirs]
       create_dirs.each do |dir|
-        puts "Create directory `#{dir}`"
+        puts "Create directory '#{dir}'"
         @crowdin.add_directory(dir)
       end
 
@@ -428,7 +428,7 @@ EOS
         update_files = local_project_tree[:files] & remote_project_tree[:files]
         files_for_upload = local_files.select { |file| update_files.include?(file[:dest]) }
         files_for_upload.each do |file|
-          print "Updating source file `#{file[:dest]}'"
+          print "Updating source file '#{file[:dest]}'"
 
           params = {}
           params[:scheme] = file.delete(:scheme)
@@ -439,9 +439,9 @@ EOS
 
           case resp['files'].first[1]
           when 'skipped'
-            puts "\rUpdating source file `#{file[:dest]}' - Skipped"
+            puts "\rUpdating source file '#{file[:dest]}' - Skipped"
           when 'updated'
-            puts "\rUpdating source file `#{file[:dest]}' - OK"
+            puts "\rUpdating source file '#{file[:dest]}' - OK"
           end
         end
       end
@@ -451,7 +451,7 @@ EOS
       add_files = local_project_tree[:files] - remote_project_tree[:files]
       files_for_add = local_files.select { |file| add_files.include?(file[:dest]) }
       files_for_add.each do |file|
-        print "Uploading source file `#{file[:dest]}'"
+        print "Uploading source file '#{file[:dest]}'"
 
         params = {}
         params[:scheme] = file.delete(:scheme)
@@ -459,7 +459,7 @@ EOS
 
         resp = @crowdin.add_file([] << file, params)
 
-        puts "\rUploading source file `#{file[:dest]}' - OK"
+        puts "\rUploading source file '#{file[:dest]}' - OK"
       end
 
     end # action
@@ -587,21 +587,21 @@ EOS
 
           if remote_project_tree[:files].include?(file[:dest])
             if File.exist?(file[:source])
-              print "Uploading translation file `#{file[:source].sub(@base_path, '')}'"
+              print "Uploading translation file '#{file[:source].sub(@base_path, '')}'"
 
               resp = @crowdin.upload_translation([] << file, language, params)
               case resp['files'].first[1]
               when 'skipped'
-                puts "\rUploading translation file `#{file[:source].sub(@base_path, '')}' - Skipped"
+                puts "\rUploading translation file '#{file[:source].sub(@base_path, '')}' - Skipped"
               when 'uploaded'
-                puts "\rUploading translation file `#{file[:source].sub(@base_path, '')}' - OK"
+                puts "\rUploading translation file '#{file[:source].sub(@base_path, '')}' - OK"
               end
             else
-              puts "Warning: Local file `#{file[:source]}' does not exist"
+              puts "Warning: Local file '#{file[:source]}' does not exist"
             end
           else
             # if source file does not exist, don't upload translations
-            puts "Warning: Skip `#{file[:source].sub(@base_path, '')}'"
+            puts "Warning: Skip '#{file[:source].sub(@base_path, '')}'"
           end
         end
       end
@@ -634,7 +634,7 @@ command :download do |c|
         if supported_languages.find { |lang| lang['crowdin_code'] == @jipt_language }
           project_languages << @jipt_language # crowdin_language_code
         else
-          exit_now!("invalid jipt language `#{@jipt_language}`")
+          exit_now!("invalid jipt language '#{@jipt_language}'")
         end
       end
     else
