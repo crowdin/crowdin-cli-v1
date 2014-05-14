@@ -251,7 +251,7 @@ def unzip_file_with_translations(zipfile_name, dest_path, files_list)
 
   unless unmatched_files.empty?
     puts "Warning: Downloaded translations do not match current project configuration. Some of the resulted files will be omitted."
-    unmatched_files.each { |file| puts " - `#{file}'" }
+    unmatched_files.each { |file| puts " - '#{file}'" }
     puts "Crowdin has internal caching mechanisms that prevents us from overload. Please try to download translations later."
   end
 end
