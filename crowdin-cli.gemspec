@@ -15,6 +15,7 @@ Gem::Specification.new do |gem|
   gem.files = %w(
     bin/crowdin-cli
     lib/crowdin-cli/version.rb
+    lib/cc/xml_shit.rb
     lib/crowdin-cli.rb
     locales/en.yml
     README.md
