@@ -7,6 +7,8 @@ en:
     flags:
       config:
         desc: The configuration file
+      identity:
+        desc: The secret configuration file
     switches:
       verbose:
         desc: Be verbose

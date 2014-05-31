@@ -325,6 +325,12 @@ default_value File.join(Dir.pwd, 'crowdin.yaml')
 arg_name '<s>'
 flag [:c, :config]
 
+desc I18n.t('app.flags.identity.desc')
+default_value File.join(Dir.home, '.crowdin.yaml')
+arg_name '<s>'
+flag [:identity]
+
+
 desc I18n.t('app.commands.upload.desc')
 long_desc I18n.t('app.commands.upload.long_desc')
 command :upload do |c|
@@ -364,17 +370,9 @@ command :upload do |c|
 
           local_file = { dest: dest, source: File.join(@base_path, file['source']), export_pattern: file['translation'] }
 
-          # additional options for CSV files only optional
-          local_file.merge!({ scheme: file['scheme'] }) if file.has_key?('scheme')
-          local_file.merge!({ first_line_contains_header: file['first_line_contains_header'] }) if file.has_key?('first_line_contains_header')
-          local_file.merge!({ update_option: file['update_option'] }) if file.has_key?('update_option')
-
-          # additional options for XML files only optional
-          local_file.merge!({ translate_content: file['translate_content'] }) if file.has_key?('translate_content')
-          local_file.merge!({ translate_attributes: file['translate_attributes'] }) if file.has_key?('translate_attributes')
-          local_file.merge!({ content_segmentations: file['content_segmentations'] }) if file.has_key?('content_segmentations')
-          local_file.merge!({ translate_elements: file['translate_elements'] }) if file.has_key?('translate_elements')
-
+          @allowed_options.each do |option|
+            local_file.merge!({ option.to_sym => file[option] }) if file.has_key?(option)
+          end
 
           local_files << local_file
         else
@@ -396,16 +394,9 @@ command :upload do |c|
 
               local_file = { dest: dest, source: source_path, export_pattern: export_pattern }
 
-              # CSV files only
-              local_file.merge!({ scheme: file['scheme'] }) if file.has_key?('scheme')
-              local_file.merge!({ first_line_contains_header: file['first_line_contains_header'] }) if file.has_key?('first_line_contains_header')
-              local_file.merge!({ update_option: file['update_option'] }) if file.has_key?('update_option')
-
-              # XML file only
-              local_file.merge!({ translate_content: file['translate_content'] }) if file.has_key?('translate_content')
-              local_file.merge!({ translate_attributes: file['translate_attributes'] }) if file.has_key?('translate_attributes')
-              local_file.merge!({ content_segmentations: file['content_segmentations'] }) if file.has_key?('content_segmentations')
-              local_file.merge!({ translate_elements: file['translate_elements'] }) if file.has_key?('translate_elements')
+              @allowed_options.each do |option|
+                local_file.merge!({ option.to_sym => file[option] }) if file.has_key?(option)
+              end
 
               local_files << local_file
             end
@@ -446,14 +437,9 @@ EOS
           print "Updating source file `#{file[:dest]}'"
 
           params = {}
-          params[:scheme] = file.delete(:scheme)
-          params[:first_line_contains_header] = file.delete(:first_line_contains_header)
-          params[:update_option] = file.delete(:update_option) # 'update_without_changes' or 'update_as_unapproved'
-
-          params[:translate_content] = file.delete(:transate_content)
-          params[:translate_attributes] = file.delete(:transate_attributes)
-          params[:content_segmentation] = file.delete(:content_segmentation)
-          params[:translate_elements] = file.delete(:transate_elements)
+          @allowed_options.each do |option|
+            params[options.to_sym] = file.delete(option.to_sym)
+          end
 
           resp = @crowdin.update_file([] << file, params)
 
@@ -474,14 +460,9 @@ EOS
         print "Uploading source file `#{file[:dest]}'"
 
         params = {}
-        params[:scheme] = file.delete(:scheme)
-        params[:first_line_contains_header] = file.delete(:first_line_contains_header)
-        params[:update_option] = file.delete(:update_option)
-
-        params[:translate_content] = file.delete(:transate_content)
-        params[:translate_attributes] = file.delete(:transate_attributes)
-        params[:content_segmentation] = file.delete(:content_segmentation)
-        params[:translate_elements] = file.delete(:transate_elements)
+        @allowed_options.each do |option|
+          params[options.to_sym] = file.delete(option.to_sym)
+        end
 
         resp = @crowdin.add_file([] << file, params)
 
@@ -793,17 +774,9 @@ command :list do |ls_cmd|
 
           local_file = { dest: dest, source: File.join(@base_path, file['source']), export_pattern: file['translation'] }
 
-          # CSV files only
-          local_file.merge!({ scheme: file['scheme'] }) if file.has_key?('scheme')
-          local_file.merge!({ first_line_contains_header: file['first_line_contains_header'] }) if file.has_key?('first_line_contains_header')
-          local_file.merge!({ update_option: file['update_option'] }) if file.has_key?('update_option')
-
-          # XML file only
-          local_file.merge!({ translate_content: file['translate_content'] }) if file.has_key?('translate_content')
-          local_file.merge!({ translate_attributes: file['translate_attributes'] }) if file.has_key?('translate_attributes')
-          local_file.merge!({ content_segmentations: file['content_segmentations'] }) if file.has_key?('content_segmentations')
-          local_file.merge!({ translate_elements: file['translate_elements'] }) if file.has_key?('translate_elements')
-
+          @allowed_options.each do |option|
+            local_file.merge!({ option.to_sym => file[option] }) if file.has_key?(option)
+          end
 
           local_files << local_file
         else
@@ -825,16 +798,9 @@ command :list do |ls_cmd|
 
               local_file = { dest: dest, source: source_path, export_pattern: export_pattern }
 
-              # CSV file only
-              local_file.merge!({ scheme: file['scheme'] }) if file.has_key?('scheme')
-              local_file.merge!({ first_line_contains_header: file['first_line_contains_header'] }) if file.has_key?('first_line_contains_header')
-              local_file.merge!({ update_option: file['update_option'] }) if file.has_key?('update_option')
-
-              # XML file only
-              local_file.merge!({ translate_content: file['translate_content'] }) if file.has_key?('translate_content')
-              local_file.merge!({ translate_attributes: file['translate_attributes'] }) if file.has_key?('translate_attributes')
-              local_file.merge!({ content_segmentations: file['content_segmentations'] }) if file.has_key?('content_segmentations')
-              local_file.merge!({ translate_elements: file['translate_elements'] }) if file.has_key?('translate_elements')
+              @allowed_options.each do |option|
+                local_file.merge!({ option.to_sym => file[option] }) if file.has_key?(option)
+              end
 
               local_files << local_file
             end
@@ -927,6 +893,18 @@ pre do |globals ,command, options, args|
   # chosen command
   # Use skips_pre before a command to skip this block
   # on that command only
+
+  @allowed_options = [
+    # CSV files only
+    'scheme',
+    'first_line_contains_header',
+    'update_option',
+    # XML files only
+    'translate_content',
+    'translate_attributes',
+    'content_segmentations',
+    'translate_elements',
+  ]
 
   if File.exists?(globals[:config])
     @config = YAML.load_file(globals[:config])
