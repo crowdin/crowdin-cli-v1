@@ -438,7 +438,7 @@ EOS
 
           params = {}
           @allowed_options.each do |option|
-            params[options.to_sym] = file.delete(option.to_sym)
+            params[option.to_sym] = file.delete(option.to_sym)
           end
 
           resp = @crowdin.update_file([] << file, params)
@@ -461,7 +461,7 @@ EOS
 
         params = {}
         @allowed_options.each do |option|
-          params[options.to_sym] = file.delete(option.to_sym)
+          params[option.to_sym] = file.delete(option.to_sym)
         end
 
         resp = @crowdin.add_file([] << file, params)
