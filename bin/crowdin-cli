@@ -914,10 +914,10 @@ Type `crowdin-cli help` to know how to specify custom configuration file
 See http://crowdin.net/page/cli-tool#configuration-file for more details
 EOS
   else
-    @config = YAML.load_file(globals[:config])
+    @config = YAML.load_file(globals[:config]) || {}
 
     if File.exists?(globals[:identity])
-      identity = YAML.load_file(globals[:identity])
+      identity = YAML.load_file(globals[:identity]) || {}
       ['api_key', 'project_identifier'].each do |key|
         @config[key] = identity[key] if identity[key]
       end
