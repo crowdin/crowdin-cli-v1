@@ -1,9 +1,9 @@
 # Crowdin-CLI
 
-[Crowdin Integration Utility Homepage](http://crowdin.net/page/cli-tool) | 
-[Support](http://crowdin.net/contacts) | 
-[Crowdin.net Homepage](http://crowdin.net) | 
-[crowdin-api RubyDoc](http://rubydoc.info/github/crowdin/crowdin-api/)
+[Crowdin Integration Utility Homepage](http://crowdin.net/page/cli-tool)
+ | [Support](http://crowdin.net/contacts)
+ | [Crowdin.net Homepage](http://crowdin.net)
+ | [crowdin-api RubyDoc](http://rubydoc.info/github/crowdin/crowdin-api/)
 
 A Command-Line Interface to sync files between local computer/server and [Crowdin](crowdin.net).
 
@@ -81,7 +81,7 @@ files:
 
 Also you can add and upload all directories matching the pattern, including all nested files and localizable files.
 
-Configuration example provided above has 'source' and 'translation' attributes containing standard wildcards (also known as globbing patterns) to make it easier to work with multiple files. 
+Configuration example provided above has 'source' and 'translation' attributes containing standard wildcards (also known as globbing patterns) to make it easier to work with multiple files.
 
 Here's patterns you can use:
 
@@ -121,9 +121,19 @@ files:
     translation: /locale/%two_letters_code%/**/%original_file_name%
 ```
 
+### Split project configuration and user credentials
+
+The `crowdin.yaml` file contains project-specific configuration and user credentials(`api_key`, `project_identifier`).
+This means that you can't commit this file in the code repository, because the API key would leak to other users. `crowdin-cli` allow 2 configuration files:
+
+* a project-specific, residing in the project directory (required)
+* a user-specific, probably residing in `$HOME/.crowdin.yaml` (optional)
+
+**NOTE**: user credentials in user-specific configuration file is higher priority than project-specific.
+
 ### Languages mapping
 
-Often software projects have custom names for locale directories. `crowdin-cli` allows you to map your own languages to understandable by Crowdin. 
+Often software projects have custom names for locale directories. `crowdin-cli` allows you to map your own languages to understandable by Crowdin.
 
 Let's say your locale directories named 'en', 'uk', 'fr', 'de'. All of them can be represented by `%two_letters_code%` placeholder. Still, you have one directory named 'zh_CH'. In order to make it work with `crowdin-cli` without changes in your project you can add `languages_mapping` section to your files set. See sample configuration below:
 
@@ -169,7 +179,8 @@ files:
 
 ### Preserving directories hierarchy
 
-By default CLI tool tries to optimize your Crowdin project hierarchy and do not repeats complete path of local files online. In case you need to keep directories structure same at Crowdin and locally you can add `preserve_hierarchy: true` option in main section of the configuration file. 
+By default CLI tool tries to optimize your Crowdin project hierarchy and do not repeats complete path of local files online.
+In case you need to keep directories structure same at Crowdin and locally you can add `preserve_hierarchy: true` option in main section of the configuration file.
 
 Configuration sample is below:
 
@@ -271,7 +282,7 @@ files:
 
 ## Usage
 
-When the configuration file is created, you are ready to start using `crowdin-cli` to manage your localization resources and automate files synchronization. 
+When the configuration file is created, you are ready to start using `crowdin-cli` to manage your localization resources and automate files synchronization.
 
 We listed most typical commands that crowdin-cli is used for:
 

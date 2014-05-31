@@ -906,8 +906,22 @@ pre do |globals ,command, options, args|
     'translate_elements',
   ]
 
-  if File.exists?(globals[:config])
+  unless File.exists?(globals[:config])
+    exit_now! <<EOS
+Can't find configuration file (default `crowdin.yaml').
+Type `crowdin-cli help` to know how to specify custom configuration file
+
+See http://crowdin.net/page/cli-tool#configuration-file for more details
+EOS
+  else
     @config = YAML.load_file(globals[:config])
+
+    if File.exists?(globals[:identity])
+      identity = YAML.load_file(globals[:identity])
+      ['api_key', 'project_identifier'].each do |key|
+        @config[key] = identity[key] if identity[key]
+      end
+    end
 
     ['api_key', 'project_identifier'].each do |key|
       unless @config[key]
@@ -926,14 +940,6 @@ Configuration file misses required section `files`
 See http://crowdin.net/page/cli-tool#configuration-file for more details
 EOS
     end
-
-  else
-    exit_now! <<EOS
-Can't find configuration file (default `crowdin.yaml').
-Type `crowdin-cli help` to know how to specify custom configuration file
-
-See http://crowdin.net/page/cli-tool#configuration-file for more details
-EOS
   end
 
   @config['files'].each do |file|
