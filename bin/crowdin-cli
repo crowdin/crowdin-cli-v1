@@ -902,8 +902,8 @@ pre do |globals ,command, options, args|
     # XML files only
     'translate_content',
     'translate_attributes',
-    'content_segmentations',
-    'translate_elements',
+    'content_segmentation',
+    'translatable_elements',
   ]
 
   unless File.exists?(globals[:config])
