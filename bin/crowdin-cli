@@ -75,6 +75,7 @@ def export_pattern_to_path(path, export_pattern, lang, languages_mapping = nil)
     '%locale%'                 => lang['locale'],
     '%locale_with_underscore%' => lang['locale'].gsub('-', '_'),
     '%android_code%'           => android_locale_code(lang['locale']),
+    '%macosx_code%'            => macosx_language_code(lang['crowdin_code']) + '.lproj',
   }
 
   placeholders = pattern.inject([]){ |memo, h| memo << h.first[/%(.*)%/, 1] }
@@ -184,6 +185,15 @@ def android_locale_code(locale_code)
   return locale_code.sub('-', '-r')
 end
 
+def macosx_language_code(language_code)
+  language_code = case language_code
+    when 'zh-TW' then 'zh-Hant'
+    when 'zh-CN' then 'zh-Hans'
+    else language_code
+  end
+  return language_code.sub('-', '_')
+end
+
 def get_invalid_placeholders(export_pattern)
   valid_placeholders = [
     '%language%',
@@ -192,6 +202,7 @@ def get_invalid_placeholders(export_pattern)
     '%locale%',
     '%locale_with_underscore%',
     '%android_code%',
+    '%macosx_code%',
     '%original_file_name%',
     '%original_path%',
     '%file_extension%',
