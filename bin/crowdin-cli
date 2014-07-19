@@ -376,10 +376,11 @@ command :upload do |c|
         ignores = file['ignore'] || []
 
         if File.exist?(File.join(@base_path, file['source']))
-          dest = file['source']
+          dest = file['dest'] || file['source']
+          type = file['type']
           dest_files << dest
 
-          local_file = { dest: dest, source: File.join(@base_path, file['source']), export_pattern: file['translation'] }
+          local_file = { dest: dest, source: File.join(@base_path, file['source']), export_pattern: file['translation'], type: type }
 
           @allowed_options.each do |option|
             local_file.merge!({ option.to_sym => file[option] }) if file.has_key?(option)
@@ -471,6 +472,8 @@ EOS
         print "Uploading source file `#{file[:dest]}'"
 
         params = {}
+        params[:type] = file.delete(:type) if file[:type]
+
         @allowed_options.each do |option|
           params[option.to_sym] = file.delete(option.to_sym)
         end
