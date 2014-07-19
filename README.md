@@ -38,8 +38,7 @@ When the tool is installed, you would have to configure your project. Basically,
 Create `crowdin.yaml` YAML file in your root project directory with the following structure:
 
 ```
----
-project_idenfier: test
+project_identifier: test
 api_key: KeepTheAPIkeySecret
 base_url: http://api.crowdin.net
 base_path: /path/to/your/project
