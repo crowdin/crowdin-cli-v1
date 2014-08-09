@@ -3,7 +3,7 @@ en:
     desc: is a command line tool that allows you to manage and synchronize your localization resources with Crowdin project
     long_desc: |
       This tool requires configuration file to be created.
-      See http://crowdin.net/page/cli-tool#configuration-file for more details.
+      See http://crowdin.com/page/cli-tool#configuration-file for more details.
     flags:
       config:
         desc: Project-specific configuration file
