@@ -1,11 +1,11 @@
 # Crowdin-CLI
 
-[Crowdin Integration Utility Homepage](http://crowdin.net/page/cli-tool)
- | [Support](http://crowdin.net/contacts)
- | [Crowdin.net Homepage](http://crowdin.net)
+[Crowdin Integration Utility Homepage](http://crowdin.com/page/cli-tool)
+ | [Support](http://crowdin.com/contacts)
+ | [crowdin.com Homepage](http://crowdin.com)
  | [crowdin-api RubyDoc](http://rubydoc.info/github/crowdin/crowdin-api/)
 
-A Command-Line Interface to sync files between local computer/server and [Crowdin](crowdin.net).
+A Command-Line Interface to sync files between local computer/server and [Crowdin](crowdin.com).
 
 It is cross-platform and can be run in a terminal (Linux, MacOS X) or in cmd.exe (Windows).
 
@@ -40,7 +40,7 @@ Create `crowdin.yaml` YAML file in your root project directory with the followin
 ```
 project_identifier: test
 api_key: KeepTheAPIkeySecret
-base_url: http://api.crowdin.net
+base_url: http://api.crowdin.com
 base_path: /path/to/your/project
 
 files:
@@ -51,7 +51,7 @@ files:
 
 * `api_key` - Crowdin Project API key
 * `project_identifier` - Crowdin project name
-* `base_url` - (default: http://api.crowdin.net)
+* `base_url` - (default: http://api.crowdin.com)
 * `base_path` - defines what directory have to be scaned(default: current directory)
 * `files`
   * `source` - defines only files that should be uploaded as sources
@@ -111,7 +111,7 @@ See sample configuration below::
 ---
 project_identifier: test
 api_key: KeepTheAPIkeySecret
-base_url: http://api.crowdin.net
+base_url: http://api.crowdin.com
 base_path: /path/to/your/project
 
 files:
@@ -140,7 +140,7 @@ Let's say your locale directories named 'en', 'uk', 'fr', 'de'. All of them can 
 ---
 project_identifier: test
 api_key: KeepTheAPIkeySecret
-base_url: http://api.crowdin.net
+base_url: http://api.crowdin.com
 base_path: /path/to/your/project
 
 files:
@@ -155,7 +155,7 @@ files:
 ```
 Mapping format is the following: `crowdin_language_code : code_use_use`.
 
-Check [complete list of Crowdin language codes](http://crowdin.net/page/api/language-codes) that can be used for mapping.
+Check [complete list of Crowdin language codes](http://crowdin.com/page/api/language-codes) that can be used for mapping.
 
 You can also override language codes for other placeholders like `%android_code%`, `%locale%` etc...
 
@@ -187,7 +187,7 @@ Configuration sample is below:
 ---
 project_identifier: test
 api_key: KeepTheAPIkeySecret
-base_url: http://api.crowdin.net
+base_url: http://api.crowdin.com
 base_path: /path/to/your/project
 preserve_hierarchy: true
 ```
@@ -198,7 +198,7 @@ preserve_hierarchy: true
 ---
 project_identifier: test
 api_key: KeepTheAPIkeySecret
-base_url: http://api.crowdin.net
+base_url: http://api.crowdin.com
 base_path: /path/to/your/project
 
 files:
@@ -244,7 +244,7 @@ files:
 ---
 project_identifier: test
 api_key: KeepTheAPIkeySecret
-base_url: http://api.crowdin.net
+base_url: http://api.crowdin.com
 base_path: /path/to/your/project
 
 files:
@@ -263,7 +263,7 @@ files:
 ---
 project_identifier: test
 api_key: KeepTheAPIkeySecret
-base_url: http://api.crowdin.net
+base_url: http://api.crowdin.com
 base_path: /path/to/your/project
 
 files:
@@ -351,6 +351,6 @@ Tested with the following Ruby versions:
 
 Author: Anton Maminov (anton.maminov@gmail.com)
 
-Copyright: 2012-2014 [Crowdin.net](http://crowdin.net/)
+Copyright: 2012-2014 [crowdin.com](http://crowdin.com/)
 
 This project is licensed under the MIT license, a copy of which can be found in the LICENSE file.

@@ -370,7 +370,7 @@ command :upload do |c|
 
       @config['files'].each do |file|
         get_invalid_placeholders(file['translation']).each do |placeholder|
-          puts "Warning: #{placeholder} is not valid variable supported by Crowdin. See http://crowdin.net/page/cli-tool#configuration-file for more details."
+          puts "Warning: #{placeholder} is not valid variable supported by Crowdin. See http://crowdin.com/page/cli-tool#configuration-file for more details."
         end
 
         ignores = file['ignore'] || []
@@ -421,7 +421,7 @@ command :upload do |c|
         exit_now! <<EOS
 No source files to upload.
 Check your configuration file to ensure that they contain valid directives.
-See http://crowdin.net/page/cli-tool#configuration-file for more details.
+See http://crowdin.com/page/cli-tool#configuration-file for more details.
 EOS
       end
 
@@ -540,7 +540,7 @@ EOS
 
       @config['files'].each do |file|
         get_invalid_placeholders(file['translation']).each do |placeholder|
-          puts "Warning: #{placeholder} is not valid variable supported by Crowdin. See http://crowdin.net/page/cli-tool#configuration-file for more details."
+          puts "Warning: #{placeholder} is not valid variable supported by Crowdin. See http://crowdin.com/page/cli-tool#configuration-file for more details."
         end
 
         ignores = file['ignore'] || []
@@ -596,7 +596,7 @@ EOS
         exit_now! <<EOS
 No translation files to upload.
 Check your configuration file to ensure that they contain valid directives.
-See http://crowdin.net/page/cli-tool#configuration-file for more details.
+See http://crowdin.com/page/cli-tool#configuration-file for more details.
 EOS
       end
 
@@ -777,7 +777,7 @@ command :list do |ls_cmd|
 
       @config['files'].each do |file|
         get_invalid_placeholders(file['translation']).each do |placeholder|
-          puts "Warning: #{placeholder} is not valid variable supported by Crowdin. See http://crowdin.net/page/cli-tool#configuration-file for more details."
+          puts "Warning: #{placeholder} is not valid variable supported by Crowdin. See http://crowdin.com/page/cli-tool#configuration-file for more details."
         end
 
         ignores = file['ignore'] || []
@@ -925,7 +925,7 @@ pre do |globals ,command, options, args|
 Can't find configuration file (default `crowdin.yaml').
 Type `crowdin-cli help` to know how to specify custom configuration file
 
-See http://crowdin.net/page/cli-tool#configuration-file for more details
+See http://crowdin.com/page/cli-tool#configuration-file for more details
 EOS
   else
     @config = YAML.load_file(globals[:config]) || {}
@@ -942,7 +942,7 @@ EOS
         exit_now! <<EOS
 Configuration file misses required option `#{key}`
 
-See http://crowdin.net/page/cli-tool#configuration-file for more details
+See http://crowdin.com/page/cli-tool#configuration-file for more details
 EOS
       end
     end
@@ -951,7 +951,7 @@ EOS
       exit_now! <<EOS
 Configuration file misses required section `files`
 
-See http://crowdin.net/page/cli-tool#configuration-file for more details
+See http://crowdin.com/page/cli-tool#configuration-file for more details
 EOS
     end
   end
@@ -1011,7 +1011,7 @@ EOS
 
   Crowdin::API.log = Logger.new($stderr) if globals[:verbose]
 
-  base_url = @config['base_url'] || 'http://api.crowdin.net'
+  base_url = @config['base_url'] || 'http://api.crowdin.com'
   @crowdin = Crowdin::API.new(api_key: @config['api_key'], project_id: @config['project_identifier'], base_url: base_url)
 
   begin
