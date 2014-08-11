@@ -40,7 +40,7 @@ Create `crowdin.yaml` YAML file in your root project directory with the followin
 ```
 project_identifier: test
 api_key: KeepTheAPIkeySecret
-base_url: http://api.crowdin.com
+base_url: https://api.crowdin.com
 base_path: /path/to/your/project
 
 files:
@@ -51,7 +51,7 @@ files:
 
 * `api_key` - Crowdin Project API key
 * `project_identifier` - Crowdin project name
-* `base_url` - (default: http://api.crowdin.com)
+* `base_url` - (default: https://api.crowdin.com)
 * `base_path` - defines what directory have to be scaned(default: current directory)
 * `files`
   * `source` - defines only files that should be uploaded as sources
@@ -111,7 +111,7 @@ See sample configuration below::
 ---
 project_identifier: test
 api_key: KeepTheAPIkeySecret
-base_url: http://api.crowdin.com
+base_url: https://api.crowdin.com
 base_path: /path/to/your/project
 
 files:
@@ -140,7 +140,7 @@ Let's say your locale directories named 'en', 'uk', 'fr', 'de'. All of them can 
 ---
 project_identifier: test
 api_key: KeepTheAPIkeySecret
-base_url: http://api.crowdin.com
+base_url: https://api.crowdin.com
 base_path: /path/to/your/project
 
 files:
@@ -187,7 +187,7 @@ Configuration sample is below:
 ---
 project_identifier: test
 api_key: KeepTheAPIkeySecret
-base_url: http://api.crowdin.com
+base_url: https://api.crowdin.com
 base_path: /path/to/your/project
 preserve_hierarchy: true
 ```
@@ -198,7 +198,7 @@ preserve_hierarchy: true
 ---
 project_identifier: test
 api_key: KeepTheAPIkeySecret
-base_url: http://api.crowdin.com
+base_url: https://api.crowdin.com
 base_path: /path/to/your/project
 
 files:
@@ -244,7 +244,7 @@ files:
 ---
 project_identifier: test
 api_key: KeepTheAPIkeySecret
-base_url: http://api.crowdin.com
+base_url: https://api.crowdin.com
 base_path: /path/to/your/project
 
 files:
@@ -263,7 +263,7 @@ files:
 ---
 project_identifier: test
 api_key: KeepTheAPIkeySecret
-base_url: http://api.crowdin.com
+base_url: https://api.crowdin.com
 base_path: /path/to/your/project
 
 files:
