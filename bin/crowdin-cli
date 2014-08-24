@@ -667,7 +667,16 @@ command :download do |c|
     end
 
     # use export API method before to download the most recent translations
-    @crowdin.export_translations
+    print 'Build ZIP archive with the latest translations '
+    export_translations = @crowdin.export_translations
+    if export_translations['success']
+      if export_translations['success']['status'] == 'build'
+        puts "- OK"
+      elsif export_translations['success']['status'] == 'skipped'
+        puts "- Skipped"
+        puts "Warning: Export was skipped. Please note that this method can be invoked only once per 30 minutes."
+      end
+    end
 
     source_language = project_info['details']['source_language']['code']
     source_language = supported_languages.find { |lang| lang['crowdin_code'] == source_language }
