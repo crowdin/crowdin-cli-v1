@@ -557,7 +557,7 @@ EOS
         end
 
         if File.exists?(File.join(@base_path, file['source']))
-          dest = file['source'].sub("#{@base_path}", '')
+          dest = file['source'].sub(/\A#{@base_path}/, '')
           dest_files << dest
 
           file_translation_languages.each do |lang|
