@@ -932,7 +932,7 @@ EOS
 
     if File.exists?(globals[:identity])
       identity = YAML.load_file(globals[:identity]) || {}
-      ['api_key', 'project_identifier'].each do |key|
+      ['api_key', 'project_identifier', 'base_path'].each do |key|
         @config[key] = identity[key] if identity[key]
       end
     end
