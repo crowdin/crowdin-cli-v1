@@ -616,6 +616,8 @@ EOS
                 puts "\rUploading translation file `#{file[:source].sub(/\A#{@base_path}/, '')}' - Skipped"
               when 'uploaded'
                 puts "\rUploading translation file `#{file[:source].sub(/\A#{@base_path}/, '')}' - OK"
+              when 'not_allowed'
+                puts "\rUploading translation file `#{file[:source].sub(/\A#{@base_path}/, '')}' - is not possible"
               end
             else
               puts "Warning: Local file `#{file[:source]}' does not exist"
