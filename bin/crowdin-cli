@@ -944,6 +944,8 @@ EOS
     rescue Psych::SyntaxError => err
       exit_now! <<EOS
 Could not parse YAML: #{err.message}
+
+We were unable to successfully parse the crowdin.yaml file that you provided - it most likely is not well-formed YAML.
 Please check whether your crowdin.yaml is valid YAML - you can use the http://yamllint.com/ validator to do this - and make any necessary changes to fix it.
 EOS
     end
