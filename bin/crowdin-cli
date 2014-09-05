@@ -939,7 +939,14 @@ Type `crowdin-cli help` to know how to specify custom configuration file
 See http://crowdin.com/page/cli-tool#configuration-file for more details
 EOS
   else
-    @config = YAML.load_file(globals[:config]) || {}
+    begin
+      @config = YAML.load_file(globals[:config]) || {}
+    rescue Psych::SyntaxError => err
+      exit_now! <<EOS
+Could not parse YAML: #{err.message}
+Please check whether your crowdin.yaml is valid YAML - you can use the http://yamllint.com/ validator to do this - and make any necessary changes to fix it.
+EOS
+    end
 
     if File.exists?(globals[:identity])
       identity = YAML.load_file(globals[:identity]) || {}
