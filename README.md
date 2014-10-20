@@ -192,6 +192,31 @@ base_path: /path/to/your/project
 preserve_hierarchy: true
 ```
 
+### Escape quotes for `.properties` file format
+
+Defines whether single quote should be escaped by another single quote or backslash in exported translations.
+You can add `escape_quote: <value>` per-file option.
+Acceptable values are: 0, 1, 2, 3. Default is 3.
+
+* 0 — Do not escape single quote;
+* 1 — Escape single quote by another single quote;
+* 2 — Escape single quote by backslash;
+* 3 — Escape single quote by another single quote only in strings containing variables ( {0} )
+
+```
+---
+project_identifier: test
+api_key: KeepTheAPIkeySecret
+base_url: https://api.crowdin.com
+base_path: /path/to/your/project
+
+files:
+  -
+   source: '/en/strings.properties'
+   translation: '/%two_letters_code%/%original_file_name%'
+   escape_quotes: 1
+```
+
 ### Uploading CSV files via API
 
 ```

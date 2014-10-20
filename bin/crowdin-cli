@@ -920,6 +920,7 @@ pre do |globals ,command, options, args|
   # on that command only
 
   @allowed_options = [
+    'escape_quotes',
     # CSV files only
     'scheme',
     'first_line_contains_header',
