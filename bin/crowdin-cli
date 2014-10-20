@@ -919,7 +919,9 @@ pre do |globals ,command, options, args|
   # Use skips_pre before a command to skip this block
   # on that command only
 
+  # TODO: check for validity options
   @allowed_options = [
+    # *.properties files only
     'escape_quotes',
     # CSV files only
     'scheme',
