@@ -389,7 +389,7 @@ command :upload do |c|
           local_files << local_file
         else
           Find.find(@base_path) do |source_path|
-            dest = source_path.sub(/\A#{@base_path}/, '') # relative path in Crowdin
+            dest = source_path.sub(/\A#{Regexp.escape(@base_path)}/, '') # relative path in Crowdin
 
             if File.directory?(source_path)
               if ignores.any? { |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
@@ -557,7 +557,7 @@ EOS
         end
 
         if File.exists?(File.join(@base_path, file['source']))
-          dest = file['source'].sub(/\A#{@base_path}/, '')
+          dest = file['source'].sub(/\A#{Regexp.escape(@base_path)}/, '')
           dest_files << dest
 
           file_translation_languages.each do |lang|
@@ -566,7 +566,7 @@ EOS
           end
         else
           Find.find(@base_path) do |source_path|
-            dest = source_path.sub(/\A#{@base_path}/, '') # relative path in Crowdin
+            dest = source_path.sub(/\A#{Regexp.escape(@base_path)}/, '') # relative path in Crowdin
 
             if File.directory?(source_path)
               if ignores.any? { |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
@@ -608,23 +608,23 @@ EOS
 
           if remote_project_tree[:files].include?(file[:dest])
             if File.exist?(file[:source])
-              print "Uploading translation file `#{file[:source].sub(/\A#{@base_path}/, '')}'"
+              print "Uploading translation file `#{file[:source].sub(/\A#{Regexp.escape(@base_path)}/, '')}'"
 
               resp = @crowdin.upload_translation([] << file, language, params)
               case resp['files'].first[1]
               when 'skipped'
-                puts "\rUploading translation file `#{file[:source].sub(/\A#{@base_path}/, '')}' - Skipped"
+                puts "\rUploading translation file `#{file[:source].sub(/\A#{Regexp.escape(@base_path)}/, '')}' - Skipped"
               when 'uploaded'
-                puts "\rUploading translation file `#{file[:source].sub(/\A#{@base_path}/, '')}' - OK"
+                puts "\rUploading translation file `#{file[:source].sub(/\A#{Regexp.escape(@base_path)}/, '')}' - OK"
               when 'not_allowed'
-                puts "\rUploading translation file `#{file[:source].sub(/\A#{@base_path}/, '')}' - is not possible"
+                puts "\rUploading translation file `#{file[:source].sub(/\A#{Regexp.escape(@base_path)}/, '')}' - is not possible"
               end
             else
               puts "Warning: Local file `#{file[:source]}' does not exist"
             end
           else
             # if source file does not exist, don't upload translations
-            puts "Warning: Skip `#{file[:source].sub(/\A#{@base_path}/, '')}'"
+            puts "Warning: Skip `#{file[:source].sub(/\A#{Regexp.escape(@base_path)}/, '')}'"
           end
         end
       end
@@ -704,7 +704,7 @@ command :download do |c|
       end
 
       if File.exists?(File.join(@base_path, file['source']))
-        dest = file['source'].sub(/\A#{@base_path}/, '')
+        dest = file['source'].sub(/\A#{Regexp.escape(@base_path)}/, '')
 
         file_translation_languages.each do |lang|
           zipped_file = export_pattern_to_path(dest, file['translation'], lang)
@@ -715,7 +715,7 @@ command :download do |c|
 
       else
         Find.find(@base_path) do |source_path|
-          dest = source_path.sub(/\A#{@base_path}/, '') # relative path in Crowdin
+          dest = source_path.sub(/\A#{Regexp.escape(@base_path)}/, '') # relative path in Crowdin
 
           if File.directory?(source_path)
             if ignores.any? { |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
@@ -806,7 +806,7 @@ command :list do |ls_cmd|
           local_files << local_file
         else
           Find.find(@base_path) do |source_path|
-            dest = source_path.sub(/\A#{@base_path}/, '') # relative path in Crowdin
+            dest = source_path.sub(/\A#{Regexp.escape(@base_path)}/, '') # relative path in Crowdin
 
             if File.directory?(source_path)
               if ignores.any? { |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
@@ -867,7 +867,7 @@ command :list do |ls_cmd|
         ignores = file['ignore'] || []
 
         if File.exists?(File.join(@base_path, file['source']))
-          dest = file['source'].sub(/\A#{@base_path}/, '')
+          dest = file['source'].sub(/\A#{Regexp.escape(@base_path)}/, '')
 
           translation_languages.each do |lang|
             local_file  = export_pattern_to_path(dest, file['translation'], lang, languages_mapping)
@@ -876,7 +876,7 @@ command :list do |ls_cmd|
 
         else
           Find.find(@base_path) do |source_path|
-            dest = source_path.sub(/\A#{@base_path}/, '') # relative path in Crowdin
+            dest = source_path.sub(/\A#{Regexp.escape(@base_path)}/, '') # relative path in Crowdin
 
             if File.directory?(source_path)
               if ignores.any? { |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
