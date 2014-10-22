@@ -235,7 +235,7 @@ end
 
 # Extract compressed files +files_list+ in a ZIP archive +zipfile_name+ to +dest_path+
 #
-# +files_list+ is a Hash of key-value pairs. Where key is a posible archive filename based on current project configuration
+# +files_list+ is a Hash of key-value pairs. Where key is a possible archive filename based on current project configuration
 # and value is the expanded filename
 #
 def unzip_file_with_translations(zipfile_name, dest_path, files_list)
@@ -246,7 +246,7 @@ def unzip_file_with_translations(zipfile_name, dest_path, files_list)
   unmatched_files = []
 
   Zip::File.open(zipfile_name) do |zipfile|
-    zipfile.select{ |zip_entry| zip_entry.file? }.each do |f|
+    zipfile.select { |zip_entry| zip_entry.file? }.each do |f|
       # `f' - relative path in archive
       file = files_list[f.name]
       if file
@@ -329,7 +329,7 @@ sort_help :manually # help commands are ordered in the order declared
 wrap_help_text :to_terminal
 
 desc I18n.t('app.switches.verbose.desc')
-switch [:v, :verbose], :negatable => false
+switch [:v, :verbose], negatable: false
 
 desc I18n.t('app.flags.config.desc')
 default_value File.join(Dir.pwd, 'crowdin.yaml')
@@ -641,7 +641,7 @@ command :download do |c|
   c.desc I18n.t('app.commands.download.flags.language.desc')
   c.long_desc I18n.t('app.commands.download.flags.language.long_desc')
   c.arg_name 'language_code'
-  c.flag [:l, :language], :default_value => 'all'
+  c.flag [:l, :language], default_value: 'all'
 
   c.action do |global_options ,options, args|
     language = options[:language]
@@ -762,7 +762,7 @@ command :list do |ls_cmd|
   ls_cmd.desc I18n.t('app.commands.list.commands.project.desc')
   ls_cmd.command :project do |proj_cmd|
     proj_cmd.desc I18n.t('app.commands.list.switches.tree.desc')
-    proj_cmd.switch ['tree'], :negatable => false
+    proj_cmd.switch ['tree'], negatable: false
 
     proj_cmd.action do |global_options, options, args|
       project_info = @crowdin.project_info
@@ -780,7 +780,7 @@ command :list do |ls_cmd|
   ls_cmd.desc I18n.t('app.commands.list.commands.sources.desc')
   ls_cmd.command :sources do |src_cmd|
     src_cmd.desc I18n.t('app.commands.list.switches.tree.desc')
-    src_cmd.switch ['tree'], :negatable => false
+    src_cmd.switch ['tree'], negatable: false
 
     src_cmd.action do |global_options, options, args|
       local_files = []
@@ -850,7 +850,7 @@ command :list do |ls_cmd|
   ls_cmd.desc I18n.t('app.commands.list.commands.translations.desc')
   ls_cmd.command :translations do |trans_cmd|
     trans_cmd.desc I18n.t('app.commands.list.switches.tree.desc')
-    trans_cmd.switch ['tree'], :negatable => false
+    trans_cmd.switch ['tree'], negatable: false
 
     trans_cmd.action do |global_options, options, args|
       project_info = @crowdin.project_info
