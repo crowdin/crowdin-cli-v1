@@ -435,7 +435,7 @@ EOS
       #
       create_dirs = local_project_tree[:dirs] - remote_project_tree[:dirs]
       create_dirs.each do |dir|
-        puts "Create directory `#{dir}`"
+        puts "Creating directory `#{dir}`"
         @crowdin.add_directory(dir)
       end
 
@@ -524,7 +524,7 @@ EOS
         if project_languages.include?(language)
           project_languages = [] << language
         else
-          exit_now!("language '#{language}' doesn't exist in a project")
+          exit_now!("language '#{language}' doesn't exist in the project")
         end
       end
 
@@ -948,7 +948,7 @@ EOS
       exit_now! <<EOS
 Could not parse YAML: #{err.message}
 
-We were unable to successfully parse the crowdin.yaml file that you provided - it most likely is not well-formed YAML.
+We were unable to successfully parse the crowdin.yaml file that you provided - most likely it is not well-formatted YAML.
 Please check whether your crowdin.yaml is valid YAML - you can use the http://yamllint.com/ validator to do this - and make any necessary changes to fix it.
 EOS
     end
@@ -990,7 +990,7 @@ Source pattern `#{file['source']}` is not valid. The mask `**` can be used only 
 EOS
       elsif file['source'].scan('**').size == 1 and !file['source'].match(/\/\*\*\//)
         exit_now! <<EOS
-Source pattern `#{file['source']}` is not valid. The mask `**` must be surrounded by backslashes `/` in the source pattern.
+Source pattern `#{file['source']}` is not valid. The mask `**` must be surrounded by slashes `/` in the source pattern.
 EOS
       end
     else
