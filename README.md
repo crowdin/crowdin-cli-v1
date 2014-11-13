@@ -68,8 +68,8 @@ files:
       * `%original_path%` - Take parent folders names in Crowdin project to build file path in resulted bundle
       * `%file_extension%` - Original file extension
       * `%file_name%` - File name without extension
-      * `%osx_code%` - .lproj
-      * `%osx_xliff%` - .xliff
+      * `%osx_code%` - OS X Locale identifier used to name ".lproj" directories
+      * `%osx_xliff%` - OS X Locale used to name xliff files (i.e. uk.xliff)
 
          Example for Android projects:
           ```
