@@ -76,6 +76,7 @@ def export_pattern_to_path(path, export_pattern, lang, languages_mapping = nil)
     '%locale_with_underscore%' => lang['locale'].gsub('-', '_'),
     '%android_code%'           => android_locale_code(lang['locale']),
     '%osx_code%'               => osx_language_code(lang['crowdin_code']) + '.lproj',
+    '%osx_xliff%'              => osx_language_code(lang['crowdin_code']) + '.xliff',
   }
 
   placeholders = pattern.inject([]){ |memo, h| memo << h.first[/%(.*)%/, 1] }
@@ -203,6 +204,7 @@ def get_invalid_placeholders(export_pattern)
     '%locale_with_underscore%',
     '%android_code%',
     '%osx_code%',
+    '%osx_liff%',
     '%original_file_name%',
     '%original_path%',
     '%file_extension%',
