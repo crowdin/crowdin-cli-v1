@@ -559,7 +559,8 @@ EOS
         end
 
         if File.exists?(File.join(@base_path, file['source']))
-          dest = file['source'].sub(/\A#{Regexp.escape(@base_path)}/, '')
+          dest = file['dest'] || file['source']
+          dest.sub!(/\A#{Regexp.escape(@base_path)}/, '')
           dest_files << dest
 
           file_translation_languages.each do |lang|
@@ -598,7 +599,7 @@ EOS
         exit_now! <<EOS
 No translation files to upload.
 Check your configuration file to ensure that they contain valid directives.
-See http://crowdin.com/page/cli-tool#configuration-file for more details.
+See https://crowdin.com/page/cli-tool#configuration-file for more details.
 EOS
       end
 
@@ -626,7 +627,7 @@ EOS
             end
           else
             # if source file does not exist, don't upload translations
-            puts "Warning: Skip `#{file[:source].sub(/\A#{Regexp.escape(@base_path)}/, '')}'"
+            puts "Warning: Skip `#{file[:source].sub(/\A#{Regexp.escape(@base_path)}/, '')}'. Translation can not be uploaded for a non-existent source file `#{file[:dest]}'. Please upload sources first."
           end
         end
       end
