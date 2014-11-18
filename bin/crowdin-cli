@@ -977,12 +977,28 @@ EOS
       exit_now! <<EOS
 Configuration file misses required section `files`
 
-See http://crowdin.com/page/cli-tool#configuration-file for more details
+See https://crowdin.com/page/cli-tool#configuration-file for more details
 EOS
     end
   end
 
   @config['files'].each do |file|
+    unless file['source']
+      exit_now! <<EOS
+Files section misses required parameter `source`
+
+See https://crowdin.com/page/cli-tool#configuration-file for more details
+EOS
+    end
+
+    unless file['translation']
+      exit_now! <<EOS
+Files section misses required parameter `translation`
+
+See https://crowdin.com/page/cli-tool#configuration-file for more details
+EOS
+
+    end
     file['source'] = '/' + file['source'] unless file['source'].start_with?('/')
     #file['translation'] = '/' + file['translation'] unless file['translation'].start_with?('/')
 
