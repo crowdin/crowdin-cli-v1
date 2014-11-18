@@ -194,6 +194,26 @@ base_path: /path/to/your/project
 preserve_hierarchy: true
 ```
 
+### [I Have No Idea How To Call This Section]
+
+This add support for 2 optional parameters in the yaml file section: `dest` and `type`.
+This is useful typically for some projects, where the uploaded name must be different so Crowdin can detect the type correctly.
+`dest` allows you to specify a file name on Crowdin.
+**NOTE**: `dest` only works for single files. Don't try to use it with patterns (multiple files).
+
+Configuration sample is below:
+
+```
+files
+  -
+    source: '/conf/messages'
+    dest: '/messages.properties'
+    translation: '/conf/messages.%two_letters_code%'
+    type: 'properties'
+
+
+```
+
 ### Escape quotes for `.properties` file format
 
 Defines whether single quote should be escaped by another single quote or backslash in exported translations.
