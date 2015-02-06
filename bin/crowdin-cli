@@ -946,7 +946,7 @@ See http://crowdin.com/page/cli-tool#configuration-file for more details
 EOS
   else
     begin
-      @config = YAML.load_file(globals[:config]) || {}
+      @config = YAML.load(ERB.new(File.read(globals[:config])).result) || {}
     rescue Psych::SyntaxError => err
       exit_now! <<EOS
 Could not parse YAML: #{err.message}
@@ -957,7 +957,7 @@ EOS
     end
 
     if File.exists?(globals[:identity])
-      identity = YAML.load_file(globals[:identity]) || {}
+      identity = YAML.load(ERB.new(File.read(globals[:identity])).result) || {}
       ['api_key', 'project_identifier', 'base_path'].each do |key|
         @config[key] = identity[key] if identity[key]
       end
