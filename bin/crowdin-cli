@@ -318,6 +318,13 @@ def display_tree(files_tree, level = -2, branches = [])
   end
 end
 
+class String
+  def strip_heredoc
+    indent = scan(/^[ \t]*(?=\S)/).min.size || 0
+    gsub(/^[ \t]{#{indent}}/, '')
+  end
+end
+
 ###
 include GLI::App
 
@@ -420,11 +427,11 @@ command :upload do |c|
       end # @config['files']
 
       if dest_files.empty?
-        exit_now! <<EOS
-No source files to upload.
-Check your configuration file to ensure that they contain valid directives.
-See http://crowdin.com/page/cli-tool#configuration-file for more details.
-EOS
+        exit_now! <<-EOS.strip_heredoc
+          No source files to upload.
+          Check your configuration file to ensure that they contain valid directives.
+          See http://crowdin.com/page/cli-tool#configuration-file for more details.
+        EOS
       end
 
       common_dir = @preserve_hierarchy ? '' : find_common_directory_path(dest_files)
@@ -596,11 +603,11 @@ EOS
       end # @config['files']
 
       if dest_files.empty?
-        exit_now! <<EOS
-No translation files to upload.
-Check your configuration file to ensure that they contain valid directives.
-See https://crowdin.com/page/cli-tool#configuration-file for more details.
-EOS
+        exit_now! <<-EOS.strip_heredoc
+          No translation files to upload.
+          Check your configuration file to ensure that they contain valid directives.
+          See https://crowdin.com/page/cli-tool#configuration-file for more details.
+        EOS
       end
 
       common_dir = @preserve_hierarchy ? '' : find_common_directory_path(dest_files)
@@ -938,86 +945,86 @@ pre do |globals ,command, options, args|
   ]
 
   unless File.exists?(globals[:config])
-    exit_now! <<EOS
-Can't find configuration file (default `crowdin.yaml').
-Type `crowdin-cli help` to know how to specify custom configuration file
+    exit_now! <<-EOS.strip_heredoc
+      Can't find configuration file (default `crowdin.yaml').
+      Type `crowdin-cli help` to know how to specify custom configuration file
 
-See http://crowdin.com/page/cli-tool#configuration-file for more details
-EOS
-  else
-    begin
-      @config = YAML.load(ERB.new(File.read(globals[:config])).result) || {}
-    rescue Psych::SyntaxError => err
-      exit_now! <<EOS
-Could not parse YAML: #{err.message}
+      See http://crowdin.com/page/cli-tool#configuration-file for more details
+    EOS
+  end
 
-We were unable to successfully parse the crowdin.yaml file that you provided - most likely it is not well-formatted YAML.
-Please check whether your crowdin.yaml is valid YAML - you can use the http://yamllint.com/ validator to do this - and make any necessary changes to fix it.
-EOS
+  begin
+    @config = YAML.load(ERB.new(File.read(globals[:config])).result) || {}
+  rescue Psych::SyntaxError => err
+    exit_now! <<-EOS.strip_heredoc
+      Could not parse YAML: #{err.message}
+
+      We were unable to successfully parse the crowdin.yaml file that you provided - most likely it is not well-formatted YAML.
+      Please check whether your crowdin.yaml is valid YAML - you can use the http://yamllint.com/ validator to do this - and make any necessary changes to fix it.
+    EOS
+  end
+
+  if File.exists?(globals[:identity])
+    identity = YAML.load(ERB.new(File.read(globals[:identity])).result) || {}
+    ['api_key', 'project_identifier', 'base_path'].each do |key|
+      @config[key] = identity[key] if identity[key]
     end
+  end
 
-    if File.exists?(globals[:identity])
-      identity = YAML.load(ERB.new(File.read(globals[:identity])).result) || {}
-      ['api_key', 'project_identifier', 'base_path'].each do |key|
-        @config[key] = identity[key] if identity[key]
-      end
+  ['api_key', 'project_identifier'].each do |key|
+    unless @config[key]
+      exit_now! <<-EOS.strip_heredoc
+        Configuration file misses required option `#{key}`
+
+        See http://crowdin.com/page/cli-tool#configuration-file for more details
+      EOS
     end
+  end
 
-    ['api_key', 'project_identifier'].each do |key|
-      unless @config[key]
-        exit_now! <<EOS
-Configuration file misses required option `#{key}`
+  unless @config['files']
+    exit_now! <<-EOS.strip_heredoc
+      Configuration file misses required section `files`
 
-See http://crowdin.com/page/cli-tool#configuration-file for more details
-EOS
-      end
-    end
-
-    unless @config['files']
-      exit_now! <<EOS
-Configuration file misses required section `files`
-
-See https://crowdin.com/page/cli-tool#configuration-file for more details
-EOS
-    end
+      See https://crowdin.com/page/cli-tool#configuration-file for more details
+    EOS
   end
 
   @config['files'].each do |file|
     unless file['source']
-      exit_now! <<EOS
-Files section misses required parameter `source`
+      exit_now! <<-EOS.strip_heredoc
+        Files section misses required parameter `source`
 
-See https://crowdin.com/page/cli-tool#configuration-file for more details
-EOS
+        See https://crowdin.com/page/cli-tool#configuration-file for more details
+      EOS
     end
 
     unless file['translation']
-      exit_now! <<EOS
-Files section misses required parameter `translation`
+      exit_now! <<-EOS.strip_heredoc
+        Files section misses required parameter `translation`
 
-See https://crowdin.com/page/cli-tool#configuration-file for more details
-EOS
-
+        See https://crowdin.com/page/cli-tool#configuration-file for more details
+      EOS
     end
+
     file['source'] = '/' + file['source'] unless file['source'].start_with?('/')
     #file['translation'] = '/' + file['translation'] unless file['translation'].start_with?('/')
 
     if file['source'].include?('**')
       if file['source'].scan('**').size > 1
-        exit_now! <<EOS
-Source pattern `#{file['source']}` is not valid. The mask `**` can be used only once in the source pattern.
-EOS
+        exit_now! <<-EOS.strip_heredoc
+          Source pattern `#{file['source']}` is not valid. The mask `**` can be used only once in the source pattern.
+        EOS
       elsif file['source'].scan('**').size == 1 and !file['source'].match(/\/\*\*\//)
-        exit_now! <<EOS
-Source pattern `#{file['source']}` is not valid. The mask `**` must be surrounded by slashes `/` in the source pattern.
-EOS
+        exit_now! <<-EOS.strip_heredoc
+          Source pattern `#{file['source']}` is not valid. The mask `**` must be surrounded by slashes `/` in the source pattern.
+        EOS
       end
     else
       if file['translation'].include?('**')
-        exit_now! <<EOS
-Translation pattern `#{file['translation']}` is not valid. The mask `**` can't be used.
-When using `**` in 'translation' pattern it will always contain sub-path from 'source' for certain file.
-EOS
+        exit_now! <<-EOS.strip_heredoc
+          Translation pattern `#{file['translation']}` is not valid. The mask `**` can't be used.
+          When using `**` in 'translation' pattern it will always contain sub-path from 'source' for certain file.
+        EOS
       end
     end
 
@@ -1027,9 +1034,9 @@ EOS
     @base_path = @config['base_path']
   else
     @base_path = Dir.pwd
-    puts <<EOS
-Warning: Configuration file misses parameter `base_path` that defines your project root directory. Using `#{@base_path}` as a root directory.
-EOS
+    puts <<-EOS.strip_heredoc
+      Warning: Configuration file misses parameter `base_path` that defines your project root directory. Using `#{@base_path}` as a root directory.
+    EOS
   end
 
   @preserve_hierarchy = false
@@ -1040,9 +1047,9 @@ EOS
       when false
         false
       else
-        exit_now! <<EOS
-Parameter `preserve_hierarchy` allows values of true or false.
-EOS
+        exit_now! <<-EOS.strip_heredoc
+          Parameter `preserve_hierarchy` allows values of true or false.
+        EOS
     end
   end
 
@@ -1072,7 +1079,7 @@ post do |globals, command, options, args|
   # Post logic here
   # Use skips_post before a command to skip this
   # block on that command only
-  #puts "Executed #{command.name}" if globals[:verbose]
+  # puts "Executed #{command.name}" if globals[:verbose]
 end
 
 on_error do |exception|
