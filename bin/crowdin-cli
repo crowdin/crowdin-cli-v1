@@ -953,7 +953,13 @@ pre do |globals ,command, options, args|
     EOS
   end
 
+  # load project-specific configuration
+  #
   begin
+    # undocumented feature
+    # you can use ERB in your config file, e.g.
+    # api_key: <%= # ruby code ... %>
+    #
     @config = YAML.load(ERB.new(File.read(globals[:config])).result) || {}
   rescue Psych::SyntaxError => err
     exit_now! <<-EOS.strip_heredoc
@@ -964,6 +970,21 @@ pre do |globals ,command, options, args|
     EOS
   end
 
+  # try to load the API credentials from an environment variable, e.g.
+  #
+  # project_identifier_env: 'CROWDIN_PROJECT_ID'
+  # api_key_env: 'CROWDIN_API_KEY'
+  #
+  ['api_key', 'project_identifier'].each do |key|
+    if @config["#{key}_env"]
+      unless @config[key] # project credentials have a higher priority if they are specified in the config
+        @config[key] = ENV[@config["#{key}_env"]]
+      end
+    end
+  end
+
+  # user credentials in the user-specific config file have a higher priority than project-specific
+  #
   if File.exists?(globals[:identity])
     identity = YAML.load(ERB.new(File.read(globals[:identity])).result) || {}
     ['api_key', 'project_identifier', 'base_path'].each do |key|

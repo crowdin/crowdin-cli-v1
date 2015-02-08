@@ -122,6 +122,25 @@ files:
     translation: /locale/%two_letters_code%/**/%original_file_name%
 ```
 
+### API Credentials from environment variables
+
+You could load the API Credentials from an environment variable, e.g.
+
+```
+api_key_env: 'CROWDIN_API_KEY'
+project_identifier_env: 'CROWDIN_PROJECT_ID'
+
+```
+
+If mix, `api_key` and `project_identifier` have priority:
+
+```
+api_key_env: CROWDIN_API_KEY            # Low priority
+project_identifier_env: CROWDIN_PROJECT # Low priority
+api_key: xxx                            # High priority
+project_identifier: yyy                 # Hight priority
+```
+
 ### Split project configuration and user credentials
 
 The `crowdin.yaml` file contains project-specific configuration and user credentials(`api_key`, `project_identifier`).
