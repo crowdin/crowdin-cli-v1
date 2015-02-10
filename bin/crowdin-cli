@@ -254,7 +254,7 @@ def unzip_file_with_translations(zipfile_name, dest_path, files_list)
       if file
         fpath = File.join(dest_path, file)
         FileUtils.mkdir_p(File.dirname(fpath))
-        puts "Download: `#{file}'"
+        puts "Extracting: `#{file}'"
         zipfile.extract(f, fpath)
       else
         unmatched_files << f
@@ -263,9 +263,8 @@ def unzip_file_with_translations(zipfile_name, dest_path, files_list)
   end
 
   unless unmatched_files.empty?
-    puts "Warning: Downloaded translations do not match current project configuration. Some of the resulted files will be omitted."
+    puts "Warning: Downloaded translations do not match current project configuration. The following files will be omitted:"
     unmatched_files.each { |file| puts " - `#{file}'" }
-    puts "Crowdin has internal caching mechanisms that prevents us from overload. Please try to download translations later."
   end
 end
 
