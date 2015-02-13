@@ -240,7 +240,7 @@ end
 # +files_list+ is a Hash of key-value pairs. Where key is a possible archive filename based on current project configuration
 # and value is the expanded filename
 #
-def unzip_file_with_translations(zipfile_name, dest_path, files_list)
+def unzip_file_with_translations(zipfile_name, dest_path, files_list, ignore_match)
   # overwrite files if they already exist inside of the extracted path
   Zip.on_exists_proc = true
 
@@ -262,7 +262,7 @@ def unzip_file_with_translations(zipfile_name, dest_path, files_list)
     end
   end
 
-  unless unmatched_files.empty?
+  unless unmatched_files.empty? or ignore_match
     puts "Warning: Downloaded translations do not match current project configuration. The following files will be omitted:"
     unmatched_files.each { |file| puts " - `#{file}'" }
   end
@@ -652,7 +652,11 @@ command :download do |c|
   c.arg_name 'language_code'
   c.flag [:l, :language], default_value: 'all'
 
-  c.action do |global_options ,options, args|
+  c.desc I18n.t('app.commands.download.switches.ignore_match.desc')
+  c.switch ['ignore-match'], negatable: false
+
+
+  c.action do |global_options, options, args|
     language = options[:language]
 
     supported_languages = @crowdin.supported_languages
@@ -755,7 +759,7 @@ command :download do |c|
     begin
       @crowdin.download_translation(language, output: zipfile_name)
 
-      unzip_file_with_translations(zipfile_name, @base_path, downloadable_files_hash)
+      unzip_file_with_translations(zipfile_name, @base_path, downloadable_files_hash, options['ignore-match'])
     ensure
       tempfile.close
       tempfile.unlink # delete the tempfile

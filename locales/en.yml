@@ -59,6 +59,11 @@ en:
             desc: |
               If the option is defined the translations will be downloaded for single specified language.
               Othervice (by default) translations are downloaded for all languages
+        switches:
+          ignore_match:
+            desc: |
+              Exit with a zero even if no files matched
+
       list:
         desc: Show a list of files (the current project)
         long_desc: |
