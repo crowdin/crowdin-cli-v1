@@ -52,7 +52,7 @@ files:
 * `api_key` - Crowdin Project API key
 * `project_identifier` - Crowdin project name
 * `base_url` - (default: https://api.crowdin.com)
-* `base_path` - defines what directory have to be scaned(default: current directory)
+* `base_path` - defines what directory have to be scanned (default: current directory)
 * `files`
   * `source` - defines only files that should be uploaded as sources
   * `translation` - defines where translations should be placed after downloading (also the path have to be checked to detect and upload existing translations)
