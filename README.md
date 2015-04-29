@@ -424,7 +424,7 @@ Create a new file called `Gemfile` in new project directory, an specify `crowdin
 
 ```ruby
 source 'https://rubygems.org'
-gem 'crowdin-api', '=0.2.8'
+gem 'crowdin-api', '=0.3.0'
 gem 'crowdin-cli', '=0.4.4'
 ```
 
