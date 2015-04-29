@@ -402,8 +402,8 @@ Use help provided with an application to get more information about available co
 
 Tested with the following Ruby versions:
 
-- MRI 1.9.3
-- JRuby 1.7.0
+- MRI 2.2.1
+- JRuby 9.0.0.0.pre2
 
 ## Creating a JAR file
 
@@ -416,7 +416,7 @@ Installation/SystemRequirements:
 Install JRuby 9.0.0.0.pre2 and Warbler gem:
 
 ```
-$ rvm install jruby-9.0.0.0.pre3
+$ rvm install jruby-9.0.0.0.pre2
 $ gem install warbler --pre
 ```
 
