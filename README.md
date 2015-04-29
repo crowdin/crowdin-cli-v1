@@ -405,6 +405,71 @@ Tested with the following Ruby versions:
 - MRI 1.9.3
 - JRuby 1.7.0
 
+## Creating a JAR file
+
+Installation/SystemRequirements:
+
+- Linux
+- Java
+- rvm
+
+Install JRuby 9.0.0.0.pre2 and Warbler gem:
+
+```
+$ rvm install jruby-9.0.0.0.pre3
+$ gem install warbler --pre
+```
+
+Create a new file called `Gemfile` in new project directory, an specify `crowdin-cli` version:
+
+```ruby
+source 'https://rubygems.org'
+gem 'crowdin-api', '=0.2.8'
+gem 'crowdin-cli', '=0.4.4'
+```
+
+Create a new file called `bin/crowdin-cli`:
+
+```ruby
+#!/usr/bin/env ruby_noexec_wrapper
+
+# The application 'crowdin-cli' is installed as part of a gem, and
+# this file is here to facilitate running it.
+#
+
+require 'rubygems'
+
+version = ">= 0"
+
+if ARGV.first =~ /^_(.*)_$/ and Gem::Version.correct? $1 then
+  version = $1
+  ARGV.shift
+end
+
+gem 'crowdin-cli', version
+load Gem.bin_path('crowdin-cli', 'crowdin-cli', version)
+```
+
+Install dependencies:
+
+```
+$ bundle
+```
+
+Compile/package with warbler
+
+```
+$ warble jar
+```
+
+and rename `warbler.jar` to whatever you want.
+
+Run jar in any computer with Java:
+
+```
+java -jar <myapp>.jar
+```
+
 ## Contributing
 
 1. Fork it
