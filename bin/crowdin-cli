@@ -977,8 +977,9 @@ pre do |globals ,command, options, args|
   #
   # project_identifier_env: 'CROWDIN_PROJECT_ID'
   # api_key_env: 'CROWDIN_API_KEY'
+  # base_path_env: 'CROWDIN_BASE_PATH'
   #
-  ['api_key', 'project_identifier'].each do |key|
+  ['api_key', 'project_identifier', 'base_path'].each do |key|
     if @config["#{key}_env"]
       unless @config[key] # project credentials have a higher priority if they are specified in the config
         @config[key] = ENV[@config["#{key}_env"]]
