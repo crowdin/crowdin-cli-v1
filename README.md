@@ -129,6 +129,7 @@ You could load the API Credentials from an environment variable, e.g.
 ```
 api_key_env: 'CROWDIN_API_KEY'
 project_identifier_env: 'CROWDIN_PROJECT_ID'
+base_path_env: 'CROWDIN_BASE_PATH'
 
 ```
 
@@ -137,8 +138,10 @@ If mix, `api_key` and `project_identifier` have priority:
 ```
 api_key_env: CROWDIN_API_KEY            # Low priority
 project_identifier_env: CROWDIN_PROJECT # Low priority
+base_path_env: CROWDIN_BASE_PATH        # Low priority
 api_key: xxx                            # High priority
-project_identifier: yyy                 # Hight priority
+project_identifier: yyy                 # High priority
+base_path: zzz                          # High priority
 ```
 
 ### Split project configuration and user credentials
