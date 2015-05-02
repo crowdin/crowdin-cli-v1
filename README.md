@@ -80,11 +80,11 @@ files:
           /locale/%two_letters_code%/LC_MESSAGES/%original_file_name%
           ```
 
-Also you can add and upload all directories matching the pattern, including all nested files and localizable files.
+You can also add and upload all directories matching the pattern, including all nested files and localizable files.
 
 Configuration example provided above has 'source' and 'translation' attributes containing standard wildcards (also known as globbing patterns) to make it easier to work with multiple files.
 
-Here's patterns you can use:
+Here are the patterns you can use:
 
 * `*` (asterisk)
 
@@ -108,7 +108,7 @@ Here's patterns you can use:
 
  Say, you can have source: `/en/**/*.po` to upload all `*.po` files to Crowdin recursively. `translation` pattern will be `/translations/%two_letters_code%/**/%original_file_name%'`.
 
-See sample configuration below::
+See sample configuration below:
 ```
 ---
 project_identifier: test
@@ -127,23 +127,26 @@ files:
 You could load the API Credentials from an environment variable, e.g.
 
 ```
-api_key_env: 'CROWDIN_API_KEY'
-project_identifier_env: 'CROWDIN_PROJECT_ID'
+api_key_env: CROWDIN_API_KEY
+project_identifier_env: CROWDIN_PROJECT_ID
+base_path_env: CROWDIN_BASE_PATH
 
 ```
 
-If mix, `api_key` and `project_identifier` have priority:
+If mixed, `api_key` and `project_identifier` have priority:
 
 ```
 api_key_env: CROWDIN_API_KEY            # Low priority
 project_identifier_env: CROWDIN_PROJECT # Low priority
+base_path_env: CROWDIN_BASE_PATH        # Low priority
 api_key: xxx                            # High priority
-project_identifier: yyy                 # Hight priority
+project_identifier: yyy                 # High priority
+base_path: zzz                          # High priority
 ```
 
 ### Split project configuration and user credentials
 
-The `crowdin.yaml` file contains project-specific configuration and user credentials(`api_key`, `project_identifier`).
+The `crowdin.yaml` file contains project-specific configuration and user credentials(`api_key`, `project_identifier`, `base_path`).
 This means that you can't commit this file in the code repository, because the API key would leak to other users. `crowdin-cli` allow 2 configuration files:
 
 * a project-specific, residing in the project directory (required)
