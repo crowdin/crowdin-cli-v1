@@ -406,7 +406,7 @@ Use help provided with an application to get more information about available co
 Tested with the following Ruby versions:
 
 - MRI 2.2.1
-- JRuby 9.0.0.0.pre2
+- JRuby 9.0.0.0
 
 ## Creating a JAR file
 
@@ -416,10 +416,10 @@ Installation/SystemRequirements:
 - Java
 - rvm
 
-Install JRuby 9.0.0.0.pre2 and Warbler gem:
+Install JRuby 9.0.0.0 and Warbler gem:
 
 ```
-$ rvm install jruby-9.0.0.0.pre2
+$ rvm install jruby-9.0.0.0
 $ gem install warbler --pre
 ```
 
@@ -428,7 +428,7 @@ Create a new file called `Gemfile` in new project directory, an specify `crowdin
 ```ruby
 source 'https://rubygems.org'
 gem 'crowdin-api', '=0.3.0'
-gem 'crowdin-cli', '=0.4.4'
+gem 'crowdin-cli', '=0.4.6'
 ```
 
 Create a new file called `bin/crowdin-cli`:
