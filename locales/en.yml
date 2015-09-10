@@ -9,6 +9,8 @@ en:
         desc: Project-specific configuration file
       identity:
         desc: User-specific configuration file with API credentials
+      branch:
+        desc: Defines branch name.
     switches:
       verbose:
         desc: Be verbose

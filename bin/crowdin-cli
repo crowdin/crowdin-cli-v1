@@ -5,6 +5,9 @@ require 'pp'
 require 'find'
 require 'crowdin-cli'
 
+# For development purposes only. Comment in production
+# require 'byebug'
+
 # GLI_DEBUG=true bundle exec bin/crowdin-cli
 
 # Setup i18n
@@ -20,6 +23,8 @@ I18n.locale = :en
 def get_remote_files_hierarchy(files, root = '/', hierarchy = { dirs: [], files: [] })
   files.each do |node|
     case node['node_type']
+    when 'branch'
+      get_remote_files_hierarchy(node['files'], root + node['name'] + '/', hierarchy)
     when 'directory'
       hierarchy[:dirs] << "#{root}#{node['name']}"
       get_remote_files_hierarchy(node['files'], root + node['name'] + '/', hierarchy)
@@ -349,7 +354,6 @@ default_value File.join(Dir.home, '.crowdin.yaml')
 arg_name '<s>'
 flag [:identity]
 
-
 desc I18n.t('app.commands.upload.desc')
 long_desc I18n.t('app.commands.upload.long_desc')
 command :upload do |c|
@@ -362,6 +366,10 @@ command :upload do |c|
     c.default_value true
     c.switch ['auto-update']
 
+    c.desc I18n.t('app.flags.branch.desc')
+    c.arg_name 'branch_name'
+    c.flag [:b, :branch]
+
     c.action do |global_options, options, args|
       project_info = @crowdin.project_info
 
@@ -371,7 +379,29 @@ command :upload do |c|
       supported_languages = @crowdin.supported_languages
       source_language = supported_languages.find { |lang| lang['crowdin_code'] == source_language }
 
-      remote_project_tree = get_remote_files_hierarchy(project_info['files'])
+      if @branch_name
+        branch = project_info['files'].find { |h| h['node_type'] == 'branch' && h['name'] == @branch_name }
+
+        if branch
+          branch_files = [] << branch
+        else
+          print "Creating a new branch `#{@branch_name}'"
+
+          @crowdin.add_directory(@branch_name, is_branch: '1')
+
+          puts "\rCreating a new branch `#{@branch_name}' - OK"
+          branch_files = []
+        end
+
+        remote_project_tree = get_remote_files_hierarchy(branch_files)
+
+        # Remove branch directory from a directory path string
+        remote_project_tree[:dirs].map! { |p| p.split('/')[2..-1].unshift('').join('/') }
+        remote_project_tree[:files].map! { |p| p.split('/')[2..-1].unshift('').join('/') }
+      else
+        # INFO it also includes all branches
+        remote_project_tree = get_remote_files_hierarchy(project_info['files'])
+      end
 
       local_files = []
       dest_files = []
@@ -443,8 +473,15 @@ command :upload do |c|
       #
       create_dirs = local_project_tree[:dirs] - remote_project_tree[:dirs]
       create_dirs.each do |dir|
-        puts "Creating directory `#{dir}`"
-        @crowdin.add_directory(dir)
+        # FIXME if directory path starts with / Crowdin returns an error:
+        # 17: Specified directory was not found
+        dir.slice!(0) if dir.start_with?('/')
+
+        print "Creating directory `#{dir}'"
+
+        @crowdin.add_directory(dir, branch: @branch_name)
+
+        puts "\rCreating directory `#{dir}' - OK"
       end
 
       if options['auto-update']
@@ -454,12 +491,16 @@ command :upload do |c|
         update_files = local_project_tree[:files] & remote_project_tree[:files]
         files_for_upload = local_files.select { |file| update_files.include?(file[:dest]) }
         files_for_upload.each do |file|
-          print "Updating source file `#{file[:dest]}'"
+          file[:dest].slice!(0) if file[:dest].start_with?('/')
 
           params = {}
+          params[:branch] = @branch_name if @branch_name
+
           @allowed_options.each do |option|
             params[option.to_sym] = file.delete(option.to_sym)
           end
+
+          print "Updating source file `#{file[:dest]}'"
 
           resp = @crowdin.update_file([] << file, params)
 
@@ -477,16 +518,22 @@ command :upload do |c|
       add_files = local_project_tree[:files] - remote_project_tree[:files]
       files_for_add = local_files.select { |file| add_files.include?(file[:dest]) }
       files_for_add.each do |file|
-        print "Uploading source file `#{file[:dest]}'"
+        # If file path starts with / Crowdin returns error
+        # 17: Specified directory was not found
+        # make sure that file[:dest] not start with '/'
+        file[:dest].slice!(0) if file[:dest].start_with?('/')
 
         params = {}
         params[:type] = file.delete(:type) if file[:type]
+        params[:branch] = @branch_name if @branch_name
 
         @allowed_options.each do |option|
           params[option.to_sym] = file.delete(option.to_sym)
         end
 
-        resp = @crowdin.add_file([] << file, params)
+        print "Uploading source file `#{file[:dest]}'"
+
+        @crowdin.add_file([] << file, params)
 
         puts "\rUploading source file `#{file[:dest]}' - OK"
       end
@@ -502,6 +549,10 @@ command :upload do |c|
     c.default_value 'all'
     c.arg_name 'crowdin_language_code'
     c.flag [:l, :language]
+
+    c.desc I18n.t('app.flags.branch.desc')
+    c.arg_name 'branch_name'
+    c.flag [:b, :branch]
 
     c.desc I18n.t('app.commands.upload.commands.translations.switches.import_duplicates.desc')
     c.switch ['import-duplicates']
@@ -522,7 +573,24 @@ command :upload do |c|
 
       project_info = @crowdin.project_info
 
-      remote_project_tree = get_remote_files_hierarchy(project_info['files'])
+      if @branch_name
+        branch = project_info['files'].find { |h| h['node_type'] == 'branch' && h['name'] == @branch_name }
+
+        if branch
+          params[:branch] = @branch_name
+          branch_files = [] << branch
+        else
+          exit_now!("branch '#{@branch_name}' doesn't exist in the project")
+        end
+
+        remote_project_tree = get_remote_files_hierarchy(branch_files)
+
+        # Remove branch directory from a directory path string
+        remote_project_tree[:dirs].map! { |p| p.split('/')[2..-1].unshift('').join('/') }
+        remote_project_tree[:files].map! { |p| p.split('/')[2..-1].unshift('').join('/') }
+      else
+        remote_project_tree = get_remote_files_hierarchy(project_info['files'])
+      end
 
       project_languages = project_info['languages'].collect { |h| h['code'] }
 
@@ -614,26 +682,33 @@ command :upload do |c|
       translated_files.each_pair do |language, files|
         files.each do |file|
           file[:dest] = file[:dest].sub(common_dir, '')
+          source_file = file[:source].sub(/\A#{Regexp.escape(@base_path)}/, '')
 
           if remote_project_tree[:files].include?(file[:dest])
             if File.exist?(file[:source])
-              print "Uploading translation file `#{file[:source].sub(/\A#{Regexp.escape(@base_path)}/, '')}'"
+              # If file path starts with / Crowdin returns error
+              # 17: Specified directory was not found
+              # make sure that file[:dest] not start with '/'
+              file[:dest].slice!(0) if file[:dest].start_with?('/')
+
+              print "Uploading translation file `#{source_file}'"
 
               resp = @crowdin.upload_translation([] << file, language, params)
+
               case resp['files'].first[1]
               when 'skipped'
-                puts "\rUploading translation file `#{file[:source].sub(/\A#{Regexp.escape(@base_path)}/, '')}' - Skipped"
+                puts "\rUploading translation file `#{source_file}' - Skipped"
               when 'uploaded'
-                puts "\rUploading translation file `#{file[:source].sub(/\A#{Regexp.escape(@base_path)}/, '')}' - OK"
+                puts "\rUploading translation file `#{source_file}' - OK"
               when 'not_allowed'
-                puts "\rUploading translation file `#{file[:source].sub(/\A#{Regexp.escape(@base_path)}/, '')}' - is not possible"
+                puts "\rUploading translation file `#{source_file}' - is not possible"
               end
             else
               puts "Warning: Local file `#{file[:source]}' does not exist"
             end
           else
             # if source file does not exist, don't upload translations
-            puts "Warning: Skip `#{file[:source].sub(/\A#{Regexp.escape(@base_path)}/, '')}'. Translation can not be uploaded for a non-existent source file `#{file[:dest]}'. Please upload sources first."
+            puts "Warning: Skip `#{source_file}'. Translation can not be uploaded for a non-existent source file `#{file[:dest]}'. Please upload sources first."
           end
         end
       end
@@ -652,9 +727,12 @@ command :download do |c|
   c.arg_name 'language_code'
   c.flag [:l, :language], default_value: 'all'
 
+  c.desc I18n.t('app.flags.branch.desc')
+  c.arg_name 'branch_name'
+  c.flag [:b, :branch]
+
   c.desc I18n.t('app.commands.download.switches.ignore_match.desc')
   c.switch ['ignore-match'], negatable: false
-
 
   c.action do |global_options, options, args|
     language = options[:language]
@@ -681,9 +759,12 @@ command :download do |c|
       end
     end
 
+    params = {}
+    params[:branch] = @branch_name if @branch_name
+
     # use export API method before to download the most recent translations
     print 'Building ZIP archive with the latest translations '
-    export_translations = @crowdin.export_translations
+    export_translations = @crowdin.export_translations(params)
     if export_translations['success']
       if export_translations['success']['status'] == 'built'
         puts "- OK"
@@ -753,11 +834,15 @@ command :download do |c|
       end # if
     end # @config['files']
 
-    ##
     tempfile = Tempfile.new(language)
     zipfile_name = tempfile.path
+
+    params = {}
+    params[:output] = zipfile_name
+    params[:branch] = @branch_name if @branch_name
+
     begin
-      @crowdin.download_translation(language, output: zipfile_name)
+      @crowdin.download_translation(language, params)
 
       unzip_file_with_translations(zipfile_name, @base_path, downloadable_files_hash, options['ignore-match'])
     ensure
@@ -777,9 +862,20 @@ command :list do |ls_cmd|
     proj_cmd.desc I18n.t('app.commands.list.switches.tree.desc')
     proj_cmd.switch ['tree'], negatable: false
 
+    proj_cmd.desc I18n.t('app.flags.branch.desc')
+    proj_cmd.arg_name 'branch_name'
+    proj_cmd.flag [:b, :branch]
+
     proj_cmd.action do |global_options, options, args|
       project_info = @crowdin.project_info
-      remote_project_tree = get_remote_files_hierarchy(project_info['files'])
+
+      if @branch_name
+        branch = project_info['files'].find { |h| h['node_type'] == 'branch' && h['name'] == @branch_name }
+        branch_files = branch ? [] << branch : []
+        remote_project_tree = get_remote_files_hierarchy(branch_files)
+      else
+        remote_project_tree = get_remote_files_hierarchy(project_info['files'])
+      end
 
       if options[:tree]
         tree = build_hash_tree(remote_project_tree[:files])
@@ -794,6 +890,10 @@ command :list do |ls_cmd|
   ls_cmd.command :sources do |src_cmd|
     src_cmd.desc I18n.t('app.commands.list.switches.tree.desc')
     src_cmd.switch ['tree'], negatable: false
+
+    src_cmd.desc I18n.t('app.flags.branch.desc')
+    src_cmd.arg_name 'branch_name'
+    src_cmd.flag [:b, :branch]
 
     src_cmd.action do |global_options, options, args|
       local_files = []
@@ -864,6 +964,10 @@ command :list do |ls_cmd|
   ls_cmd.command :translations do |trans_cmd|
     trans_cmd.desc I18n.t('app.commands.list.switches.tree.desc')
     trans_cmd.switch ['tree'], negatable: false
+
+    trans_cmd.desc I18n.t('app.flags.branch.desc')
+    trans_cmd.arg_name 'branch_name'
+    trans_cmd.flag [:b, :branch]
 
     trans_cmd.action do |global_options, options, args|
       project_info = @crowdin.project_info
@@ -1061,6 +1165,15 @@ pre do |globals ,command, options, args|
     @base_path = Dir.pwd
     puts <<-EOS.strip_heredoc
       Warning: Configuration file misses parameter `base_path` that defines your project root directory. Using `#{@base_path}` as a root directory.
+    EOS
+  end
+
+  @branch_name = options[:branch] || nil
+  @base_path = @branch_name ? File.join(@base_path, @branch_name) : @base_path
+
+  unless Dir.exists?(@base_path)
+    exit_now! <<-EOS.strip_heredoc
+      No such directory `#{@base_path}`. Please make sure that the `base_path` or a branch name is properly set.
     EOS
   end
 
