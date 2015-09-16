@@ -414,6 +414,7 @@ command :upload do |c|
         if File.exist?(File.join(@base_path, file['source']))
           dest = file['dest'] || file['source']
           type = file['type']
+
           dest_files << dest
 
           local_file = { dest: dest, source: File.join(@base_path, file['source']), export_pattern: file['translation'], type: type }
@@ -426,6 +427,7 @@ command :upload do |c|
         else
           Find.find(@base_path) do |source_path|
             dest = source_path.sub(/\A#{Regexp.escape(@base_path)}/, '') # relative path in Crowdin
+            type = file['type']
 
             if File.directory?(source_path)
               if ignores.any? { |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
@@ -440,7 +442,7 @@ command :upload do |c|
 
               export_pattern = construct_export_pattern(dest, file['source'], file['translation'])
 
-              local_file = { dest: dest, source: source_path, export_pattern: export_pattern }
+              local_file = { dest: dest, source: source_path, export_pattern: export_pattern, type: type }
 
               @allowed_options.each do |option|
                 local_file.merge!({ option.to_sym => file[option] }) if file.has_key?(option)
