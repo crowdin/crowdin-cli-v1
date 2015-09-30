@@ -416,10 +416,10 @@ Installation/SystemRequirements:
 - Java
 - rvm
 
-Install JRuby 9.0.0.0 and Warbler gem:
+Install JRuby `>=9.0.0.0` and Warbler gem `>=2.0.0`:
 
 ```
-$ rvm install jruby-9.0.0.0
+$ rvm install jruby
 $ gem install warbler --pre
 ```
 
@@ -427,8 +427,8 @@ Create a new file called `Gemfile` in new project directory, an specify `crowdin
 
 ```ruby
 source 'https://rubygems.org'
-gem 'crowdin-api', '=0.3.0'
-gem 'crowdin-cli', '=0.4.6'
+gem 'crowdin-api', '=0.4.0'
+gem 'crowdin-cli', '=0.5.1'
 ```
 
 Create a new file called `bin/crowdin-cli`:
@@ -459,7 +459,7 @@ Install dependencies:
 $ bundle
 ```
 
-Compile/package with warbler
+Compile/package with Warbler:
 
 ```
 $ warble jar
@@ -467,7 +467,7 @@ $ warble jar
 
 and rename `warbler.jar` to whatever you want.
 
-Run jar in any computer with Java:
+Run jar in any computer with installed Java:
 
 ```
 java -jar <myapp>.jar
