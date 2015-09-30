@@ -304,6 +304,28 @@ files:
 
 ```
 
+### Versions Management
+
+In version `0.5.0` we added support for versions management feature in Crowdin. Read more in our [blog](http://blog.crowdin.com/post/130133108120/new-feature-versions-management).
+
+This is how Crowdin CLI command looks like if you upload source texts from the branch: 
+
+```
+crowdin-cli upload sources -b {branch_name}
+```
+
+Upload translations texts from the branch:
+
+```
+crowdin-cli upload translations -b {branch_name}
+```
+
+Download translations from the branch:
+
+```
+crowdin-cli download -b {branch_name}
+
+```
 
 ## Configurations Examples
 
