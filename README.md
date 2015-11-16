@@ -216,7 +216,7 @@ base_path: /path/to/your/project
 preserve_hierarchy: true
 ```
 
-### [I Have No Idea How To Call This Section]
+### Uploading files to specified path with specified type
 
 This add support for 2 optional parameters in the yaml file section: `dest` and `type`.
 This is useful typically for some projects, where the uploaded name must be different so Crowdin can detect the type correctly.
