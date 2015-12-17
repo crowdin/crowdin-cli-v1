@@ -254,8 +254,14 @@ def unzip_file_with_translations(zipfile_name, dest_path, files_list, ignore_mat
 
   Zip::File.open(zipfile_name) do |zipfile|
     zipfile.select { |zip_entry| zip_entry.file? }.each do |f|
+      filename = f.name
+      if @branch_name and @base_path_contains_branch_subfolders
+        # strip branch from filename
+        filename = f.name.sub(File.join(@branch_name, '/'), '')
+      end
+
       # `f' - relative path in archive
-      file = files_list[f.name]
+      file = files_list[filename]
       if file
         fpath = File.join(dest_path, file)
         FileUtils.mkdir_p(File.dirname(fpath))
@@ -1170,8 +1176,24 @@ pre do |globals, command, options, args|
     EOS
   end
 
+  @base_path_contains_branch_subfolders = false
+  if @config['base_path_contains_branch_subfolders']
+    @base_path_contains_branch_subfolders = case @config['base_path_contains_branch_subfolders']
+      when true
+        true
+      when false
+        false
+      else
+        exit_now! <<-EOS.strip_heredoc
+          Parameter `base_path_contains_branch_subfolders` allows values of true or false.
+        EOS
+    end
+  end
+
   @branch_name = options[:branch] || nil
-  # @base_path = @branch_name ? File.join(@base_path, @branch_name) : @base_path
+  if @branch_name and @base_path_contains_branch_subfolders
+    @base_path = File.join(@base_path, @branch_name)
+  end
 
   unless Dir.exists?(@base_path)
     exit_now! <<-EOS.strip_heredoc

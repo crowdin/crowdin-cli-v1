@@ -301,30 +301,40 @@ files:
     first_line_contains_header: true
     scheme: "identifier,source_phrase,context,uk,ru,fr"
     multilingual_spreadsheet: true
-
 ```
 
 ### Versions Management
 
 In version `0.5.0` we added support for versions management feature in Crowdin. Read more in our [blog](http://blog.crowdin.com/post/130133108120/new-feature-versions-management).
 
-This is how Crowdin CLI command looks like if you upload source texts from the branch: 
-
+This is how Crowdin CLI command looks like if you upload source texts from the branch:
 ```
 crowdin-cli upload sources -b {branch_name}
 ```
 
 Upload translations texts from the branch:
-
 ```
 crowdin-cli upload translations -b {branch_name}
 ```
 
 Download translations from the branch:
-
 ```
 crowdin-cli download -b {branch_name}
+```
 
+### Using a common base path for multiple branches
+
+By default CLI tool uses the base path without taking the branch into account when using the new versions management feature.
+In case you need to specify a common base path that contains the branches in subfolders named after branch names you can add `base_path_contains_branch_subfolders: true` option in main section of the configuration file.
+
+Configuration file example:
+```
+---
+project_identifier: test
+api_key: KeepTheAPIkeySecret
+base_url: https://api.crowdin.com
+base_path: /path/to/your/project
+base_path_contains_branch_subfolders: true
 ```
 
 ## Configurations Examples
