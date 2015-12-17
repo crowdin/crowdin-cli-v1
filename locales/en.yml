@@ -65,6 +65,9 @@ en:
           ignore_match:
             desc: |
               Exit with a zero even if no files matched
+          include_unchanged:
+            desc: |
+              Download all translation files whether or not they have changes
 
       list:
         desc: Show a list of files (the current project)
