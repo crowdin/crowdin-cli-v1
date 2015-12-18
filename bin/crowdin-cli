@@ -458,7 +458,7 @@ command :upload do |c|
             end
           end # Find
 
-        end # if File.exists?
+        end # if File.exist?
       end # @config['files']
 
       if dest_files.empty?
@@ -636,7 +636,7 @@ command :upload do |c|
           file_translation_languages = translation_languages
         end
 
-        if File.exists?(File.join(@base_path, file['source']))
+        if File.exist?(File.join(@base_path, file['source']))
           dest = file['dest'] || file['source']
           dest.sub!(/\A#{Regexp.escape(@base_path)}/, '')
           dest_files << dest
@@ -814,7 +814,7 @@ command :download do |c|
         file_translation_languages = translation_languages
       end
 
-      if File.exists?(File.join(@base_path, file['source']))
+      if File.exist?(File.join(@base_path, file['source']))
         dest = file['source'].sub(/\A#{Regexp.escape(@base_path)}/, '')
 
         file_translation_languages.each do |lang|
@@ -963,7 +963,7 @@ command :list do |ls_cmd|
             end
           end # Find
 
-        end # if File.exists?
+        end # if File.exist?
       end # @config['files']
 
       common_dir = @preserve_hierarchy ? '' : find_common_directory_path(dest_files)
@@ -996,7 +996,7 @@ command :list do |ls_cmd|
 
         ignores = file['ignore'] || []
 
-        if File.exists?(File.join(@base_path, file['source']))
+        if File.exist?(File.join(@base_path, file['source']))
           dest = file['source'].sub(/\A#{Regexp.escape(@base_path)}/, '')
 
           translation_languages.each do |lang|
@@ -1064,7 +1064,7 @@ pre do |globals, command, options, args|
     'translatable_elements',
   ]
 
-  unless File.exists?(globals[:config])
+  unless File.exist?(globals[:config])
     exit_now! <<-EOS.strip_heredoc
       Can't find configuration file (default `crowdin.yaml').
       Type `crowdin-cli help` to know how to specify custom configuration file
@@ -1106,7 +1106,7 @@ pre do |globals, command, options, args|
 
   # user credentials in the user-specific config file have a higher priority than project-specific
   #
-  if File.exists?(globals[:identity])
+  if File.exist?(globals[:identity])
     identity = YAML.load(ERB.new(File.read(globals[:identity])).result) || {}
     ['api_key', 'project_identifier', 'base_path'].each do |key|
       @config[key] = identity[key] if identity[key]
@@ -1200,7 +1200,7 @@ pre do |globals, command, options, args|
     @base_path = File.join(@base_path, @branch_name)
   end
 
-  unless Dir.exists?(@base_path)
+  unless Dir.exist?(@base_path)
     exit_now! <<-EOS.strip_heredoc
       No such directory `#{@base_path}`. Please make sure that the `base_path` is properly set.
     EOS
