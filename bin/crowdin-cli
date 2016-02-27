@@ -22,14 +22,16 @@ I18n.locale = :en
 #
 def get_remote_files_hierarchy(files, root = '/', hierarchy = { dirs: [], files: [] })
   files.each do |node|
+    path = root + node['name']
+
     case node['node_type']
     when 'branch'
-      get_remote_files_hierarchy(node['files'], root + node['name'] + '/', hierarchy)
+      get_remote_files_hierarchy(node['files'], path + '/', hierarchy)
     when 'directory'
-      hierarchy[:dirs] << "#{root}#{node['name']}"
-      get_remote_files_hierarchy(node['files'], root + node['name'] + '/', hierarchy)
+      hierarchy[:dirs] << path
+      get_remote_files_hierarchy(node['files'], path + '/', hierarchy)
     when 'file'
-      hierarchy[:files] << "#{root}#{node['name']}"
+      hierarchy[:files] << path
     end
   end
 
@@ -86,7 +88,7 @@ def export_pattern_to_path(path, export_pattern, lang, languages_mapping = nil)
 
   placeholders = pattern.inject([]){ |memo, h| memo << h.first[/%(.*)%/, 1] }
 
-  unless languages_mapping.nil?
+  unless languages_mapping
     pattern = Hash[pattern.map { |placeholder, str| [
       placeholder,
       (languages_mapping[placeholder[/%(.*)%/, 1]][lang['crowdin_code']] rescue nil) || str]
@@ -102,9 +104,9 @@ end
 #
 def construct_export_pattern(path, source, translation)
   pattern_regexp = translate_pattern_to_regexp(source)
-  if pattern_regexp.names.include?('double_asterisk') and path.match(pattern_regexp)
+  if pattern_regexp.names.include?('double_asterisk') && path.match(pattern_regexp)
     double_asterisk = path.match(pattern_regexp)['double_asterisk']
-    translation = translation.sub('**', double_asterisk)
+    translation.sub!('**', double_asterisk)
   end
 
   export_pattern = translation.split('/').reject(&:empty?).join('/')
@@ -136,7 +138,7 @@ def translate_pattern_to_regexp(pat)
     i = i + 1
     if c == '*'
       j = i
-      if j < n and pat[j] == '*'
+      if j < n && pat[j] == '*'
         res[-1] = '(\/)?(?<double_asterisk>.*)?'
         i = j + 1
       else
@@ -149,16 +151,16 @@ def translate_pattern_to_regexp(pat)
       # The following two statements check if the sequence we stumbled
       # upon is '[]' or '[^]' because those are not valid character
       # classes.
-      if j < n and pat[j] == '^'
+      if j < n && pat[j] == '^'
         j = j + 1
       end
-      if j < n and pat[j] == ']'
+      if j < n && pat[j] == ']'
         j = j + 1
       end
       # Look for the closing ']' right off the bat. If one is not found,
       # escape the opening '[' and continue.  If it is found, process
       # he contents of '[...]'.
-      while j < n and pat[j] != ']'
+      while j < n && pat[j] != ']'
         j = j + 1
       end
       if j >= n
@@ -226,17 +228,17 @@ end
 #
 def find_common_directory_path(paths)
   case paths.length
-    when 0
-      return '/'
-    when 1
-      return paths.first.split('/').slice(0...-1).join('/')
-    else
-      arr = paths.sort
-      first = arr.first.split('/')
-      last = arr.last.split('/')
-      i = 0
-      i += 1 while first[i] == last[i] && i <= first.length
-      first.slice(0, i).join('/')
+  when 0
+    return '/'
+  when 1
+    return paths.first.split('/').slice(0...-1).join('/')
+  else
+    arr = paths.sort
+    first = arr.first.split('/')
+    last = arr.last.split('/')
+    i = 0
+    i += 1 while first[i] == last[i] && i <= first.length
+    first.slice(0, i).join('/')
   end
 end
 
@@ -255,9 +257,10 @@ def unzip_file_with_translations(zipfile_name, dest_path, files_list, ignore_mat
   Zip::File.open(zipfile_name) do |zipfile|
     zipfile.select { |zip_entry| zip_entry.file? }.each do |f|
       filename = f.name
-      if @branch_name and @base_path_contains_branch_subfolders
+
+      if @branch_name && @base_path_contains_branch_subfolders
         # strip branch from filename
-        filename = f.name.sub(File.join(@branch_name, '/'), '')
+        filename.sub!(File.join(@branch_name, '/'), '')
       end
 
       # `f' - relative path in archive
@@ -273,7 +276,7 @@ def unzip_file_with_translations(zipfile_name, dest_path, files_list, ignore_mat
     end
   end
 
-  unless unmatched_files.empty? or ignore_match
+  unless unmatched_files.empty? || ignore_match
     puts "Warning: Downloaded translations do not match current project configuration. The following files will be omitted:"
     unmatched_files.each { |file| puts " - `#{file}'" }
   end
@@ -329,6 +332,9 @@ def display_tree(files_tree, level = -2, branches = [])
 end
 
 class String
+  # TODO in Ruby 2.3 will be a new and improved HEREDOC syntax called the squiggly HEREDOC
+  # it strips the leading whitespace (similar to this method)
+  #
   def strip_heredoc
     indent = scan(/^[ \t]*(?=\S)/).min.size || 0
     gsub(/^[ \t]{#{indent}}/, '')
@@ -1156,7 +1162,7 @@ pre do |globals, command, options, args|
         exit_now! <<-EOS.strip_heredoc
           Source pattern `#{file['source']}` is not valid. The mask `**` can be used only once in the source pattern.
         EOS
-      elsif file['source'].scan('**').size == 1 and !file['source'].match(/\/\*\*\//)
+      elsif file['source'].scan('**').size == 1 && !file['source'].match(/\/\*\*\//)
         exit_now! <<-EOS.strip_heredoc
           Source pattern `#{file['source']}` is not valid. The mask `**` must be surrounded by slashes `/` in the source pattern.
         EOS
@@ -1184,19 +1190,19 @@ pre do |globals, command, options, args|
   @base_path_contains_branch_subfolders = false
   if @config['base_path_contains_branch_subfolders']
     @base_path_contains_branch_subfolders = case @config['base_path_contains_branch_subfolders']
-      when true
-        true
-      when false
-        false
-      else
-        exit_now! <<-EOS.strip_heredoc
-          Parameter `base_path_contains_branch_subfolders` allows values of true or false.
-        EOS
+    when true
+      true
+    when false
+      false
+    else
+      exit_now! <<-EOS.strip_heredoc
+        Parameter `base_path_contains_branch_subfolders` allows values of true or false.
+      EOS
     end
   end
 
   @branch_name = options[:branch] || nil
-  if @branch_name and @base_path_contains_branch_subfolders
+  if @branch_name && @base_path_contains_branch_subfolders
     @base_path = File.join(@base_path, @branch_name)
   end
 
@@ -1209,14 +1215,14 @@ pre do |globals, command, options, args|
   @preserve_hierarchy = false
   if @config['preserve_hierarchy']
     @preserve_hierarchy = case @config['preserve_hierarchy']
-      when true
-        true
-      when false
-        false
-      else
-        exit_now! <<-EOS.strip_heredoc
-          Parameter `preserve_hierarchy` allows values of true or false.
-        EOS
+    when true
+      true
+    when false
+      false
+    else
+      exit_now! <<-EOS.strip_heredoc
+        Parameter `preserve_hierarchy` allows values of true or false.
+      EOS
     end
   end
 
