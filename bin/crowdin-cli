@@ -209,7 +209,7 @@ def get_invalid_placeholders(export_pattern)
     '%locale_with_underscore%',
     '%android_code%',
     '%osx_code%',
-    '%osx_liff%',
+    '%osx_xliff%',
     '%original_file_name%',
     '%original_path%',
     '%file_extension%',
