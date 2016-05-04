@@ -82,6 +82,7 @@ def export_pattern_to_path(path, export_pattern, lang, languages_mapping = nil)
     '%android_code%'           => android_locale_code(lang['locale']),
     '%osx_code%'               => osx_language_code(lang['crowdin_code']) + '.lproj',
     '%osx_xliff%'              => osx_language_code(lang['crowdin_code']) + '.xliff',
+    '%osx_locale%'             => osx_language_code(lang['crowdin_code']),
   }
 
   placeholders = pattern.inject([]){ |memo, h| memo << h.first[/%(.*)%/, 1] }
@@ -210,6 +211,7 @@ def get_invalid_placeholders(export_pattern)
     '%android_code%',
     '%osx_code%',
     '%osx_xliff%',
+    '%osx_locale%',
     '%original_file_name%',
     '%original_path%',
     '%file_extension%',
