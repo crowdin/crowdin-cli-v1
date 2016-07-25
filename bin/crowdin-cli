@@ -291,18 +291,17 @@ end
 # ├  └  ─  │
 #
 def display_tree(files_tree, level = -2, branches = [])
-  tab = ' ' * 4
   level += 1
 
   files_tree.each_with_index do |(key, val), index|
     if val.empty? # this is a file
-      result = branches.take(level).inject('') { |s, i| s << (i == 1 ? '│   ': '    ') }
+      result = branches.take(level).inject('') { |s, i| s << (i == 1 ? '│' : '').ljust(4) }
 
       if index == files_tree.length - 1
         # this is a last element
-        result << '└' + '── ' + key
+        result << '└' + '──' + ' ' + key
       else
-        result << '├' + '── ' + key
+        result << '├' + '──' + ' ' + key
       end
 
       puts result
@@ -310,14 +309,14 @@ def display_tree(files_tree, level = -2, branches = [])
       if key == '' # root directory
         result = '.'
       else
-        result = branches.take(level).inject('') { |s, i| s << (i == 1 ? '│   ' : '    ') }
+        result = branches.take(level).inject('') { |s, i| s << (i == 1 ? '│' : '').ljust(4) }
         if index == files_tree.length - 1
           # this is a last element
-          result << '└' + '── ' + key
+          result << '└' + '──' + ' ' + key
 
           branches[level] = 0
         else
-          result << '├' + '── ' + key
+          result << '├' + '──' + ' ' + key
 
           branches[level] = 1
         end
