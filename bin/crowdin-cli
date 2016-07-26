@@ -255,6 +255,7 @@ def unzip_file_with_translations(zipfile_name, dest_path, files_list, ignore_mat
   unmatched_files = []
 
   Zip::File.open(zipfile_name) do |zipfile|
+    zipfile.restore_permissions = false
     zipfile.select { |zip_entry| zip_entry.file? }.each do |f|
       filename = f.name
       if @branch_name and @base_path_contains_branch_subfolders
