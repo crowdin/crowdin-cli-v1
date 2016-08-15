@@ -26,7 +26,7 @@ en:
             long_desc: |
               Upload source files to Crowdin project.
               If there are new localization files locally they will be added to Crowdin project.
-              Othervice files will be updated (if no --no-auto-update option specified).
+              Otherwise files will be updated (if no --no-auto-update option specified).
             switches:
               auto_update:
                 desc: |
@@ -60,7 +60,7 @@ en:
           language:
             desc: |
               If the option is defined the translations will be downloaded for single specified language.
-              Othervice (by default) translations are downloaded for all languages
+              Otherwise (by default) translations are downloaded for all languages
         switches:
           ignore_match:
             desc: |
