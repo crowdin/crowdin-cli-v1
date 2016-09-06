@@ -446,21 +446,21 @@ Installation/SystemRequirements:
 
 - Linux
 - Java
-- rvm
+- rvm/rbenv 
 
-Install JRuby `>=9.0.0.0` and Warbler gem `>=2.0.0`:
+Install latest version of JRuby `>=9.0.0.0` and Warbler gem `>=2.0.0`:
 
 ```
 $ rvm install jruby
-$ gem install warbler --pre
+$ gem install warbler
 ```
 
 Create a new file called `Gemfile` in new project directory, an specify `crowdin-cli` version:
 
 ```ruby
 source 'https://rubygems.org'
-gem 'crowdin-api', '=0.4.0'
-gem 'crowdin-cli', '=0.5.1'
+gem 'crowdin-api', '=0.4.1'
+gem 'crowdin-cli', '=0.5.4'
 ```
 
 Create a new file called `bin/crowdin-cli`:
