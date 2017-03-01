@@ -510,6 +510,15 @@ Run jar in any computer with installed Java:
 java -jar <myapp>.jar
 ```
 
+#### Installing as a Java Application
+
+We bundled crowdin-cli as a Java application to let you start using crowdin-cli easier.
+This method does not require installation. To get started:
+
+1.  [Download crowdin-cli.jar]({{site.parentsite[site.lang]}}/downloads/crowdin-cli.jar "Download crowdin-cli bundled as Java application") and save to your hard drive
+2.  Check that you have Java 7 installed
+3.  Add the crowdin-cli.jar file to your project directory
+
 ## Contributing
 
 1. Fork it
