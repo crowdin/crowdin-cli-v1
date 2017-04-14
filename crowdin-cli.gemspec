@@ -26,10 +26,10 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency 'rake'
   gem.add_development_dependency 'rdoc'
   gem.add_development_dependency 'aruba'
-  gem.add_runtime_dependency 'gli', '~> 2.9'
+  gem.add_runtime_dependency 'gli', '~> 2.16'
   gem.add_runtime_dependency 'rubyzip', '~> 1.0'
-  gem.add_runtime_dependency 'crowdin-api', '~> 0.4.0'
-  gem.add_runtime_dependency 'i18n', '~> 0.7', '>= 0.7.0'
+  gem.add_runtime_dependency 'crowdin-api', '~> 0.5.0'
+  gem.add_runtime_dependency 'i18n', '~> 0.8'
   gem.platform = Gem::Platform::RUBY
   gem.required_ruby_version = '>= 1.9.3'
 end
