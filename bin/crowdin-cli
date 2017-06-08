@@ -79,6 +79,7 @@ def export_pattern_to_path(path, export_pattern, lang, languages_mapping = nil)
     '%three_letters_code%'     => lang['iso_639_3'],
     '%locale%'                 => lang['locale'],
     '%locale_with_underscore%' => lang['locale'].gsub('-', '_'),
+    '%crowdin_code%'           => lang['crowdin_code'],
     '%android_code%'           => android_locale_code(lang['locale']),
     '%osx_code%'               => osx_language_code(lang['crowdin_code']) + '.lproj',
     '%osx_xliff%'              => osx_language_code(lang['crowdin_code']) + '.xliff',
@@ -820,7 +821,7 @@ command :download do |c|
         dest = file['source'].sub(/\A#{Regexp.escape(@base_path)}/, '')
 
         file_translation_languages.each do |lang|
-          zipped_file = export_pattern_to_path(dest, file['translation'], lang)
+          zipped_file = export_pattern_to_path(dest, "%crowdin_code%/%original_path%/%original_file_name%", lang)
           zipped_file.sub!(/^\//, '')
           local_file  = export_pattern_to_path(dest, file['translation'], lang, languages_mapping)
           downloadable_files_hash[zipped_file] = local_file
