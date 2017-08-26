@@ -498,27 +498,38 @@ command :upload do |c|
         # array containing elements common to the two arrays
         update_files = local_project_tree[:files] & remote_project_tree[:files]
         files_for_upload = local_files.select { |file| update_files.include?(file[:dest]) }
-        files_for_upload.each do |file|
-          file[:dest].slice!(0) if file[:dest].start_with?('/')
 
-          params = {}
-          params[:branch] = @branch_name if @branch_name
+        THREAD_COUNT = 12  # tweak this number for maximum performance.
 
-          @allowed_options.each do |option|
-            params[option.to_sym] = file.delete(option.to_sym)
+        resps = []
+        mutex = Mutex.new
+
+        THREAD_COUNT.times.map {
+          Thread.new(files_for_upload, resps) do |files_for_upload, resps|
+            while file = mutex.synchronize { files_for_upload.pop }
+              file[:dest].slice!(0) if file[:dest].start_with?('/')
+
+              params = {}
+              params[:branch] = @branch_name if @branch_name
+
+              @allowed_options.each do |option|
+                params[option.to_sym] = file.delete(option.to_sym)
+              end
+
+              print "Updating source file `#{file[:dest]}'"
+
+              resp = @crowdin.update_file([] << file, params)
+
+              case resp['files'].first[1]
+              when 'skipped'
+                puts "\rUpdating source file `#{file[:dest]}' - Skipped"
+              when 'updated'
+                puts "\rUpdating source file `#{file[:dest]}' - OK"
+              end
+              mutex.synchronize { resps << resp }
+            end
           end
-
-          print "Updating source file `#{file[:dest]}'"
-
-          resp = @crowdin.update_file([] << file, params)
-
-          case resp['files'].first[1]
-          when 'skipped'
-            puts "\rUpdating source file `#{file[:dest]}' - Skipped"
-          when 'updated'
-            puts "\rUpdating source file `#{file[:dest]}' - OK"
-          end
-        end
+        }.each(&:join)
       end
 
       # Add new files to Crowdin project
