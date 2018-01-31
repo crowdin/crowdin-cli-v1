@@ -79,10 +79,9 @@ def export_pattern_to_path(path, export_pattern, lang, languages_mapping = nil)
     '%three_letters_code%'     => lang['iso_639_3'],
     '%locale%'                 => lang['locale'],
     '%locale_with_underscore%' => lang['locale'].gsub('-', '_'),
-    '%android_code%'           => android_locale_code(lang['locale']),
-    '%osx_code%'               => osx_language_code(lang['crowdin_code']) + '.lproj',
-    '%osx_xliff%'              => osx_language_code(lang['crowdin_code']) + '.xliff',
-    '%osx_locale%'             => osx_language_code(lang['crowdin_code']),
+    '%android_code%'           => lang['android_code'],
+    '%osx_code%'               => lang['osx_code'],
+    '%osx_locale%'             => lang['osx_locale'],
   }
 
   placeholders = pattern.inject([]){ |memo, h| memo << h.first[/%(.*)%/, 1] }
@@ -182,25 +181,6 @@ def translate_pattern_to_regexp(pat)
   return Regexp.new(res + '$')
 end
 
-def android_locale_code(locale_code)
-  locale_code = case locale_code
-    when 'he-IL' then 'iw-IL'
-    when 'yi-DE' then 'ji-DE'
-    when 'id-ID' then 'in-ID'
-    else locale_code
-  end
-  return locale_code.sub('-', '-r')
-end
-
-def osx_language_code(language_code)
-  language_code = case language_code
-    when 'zh-TW' then 'zh-Hant'
-    when 'zh-CN' then 'zh-Hans'
-    else language_code
-  end
-  return language_code.sub('-', '_')
-end
-
 def get_invalid_placeholders(export_pattern)
   valid_placeholders = [
     '%language%',
@@ -210,7 +190,6 @@ def get_invalid_placeholders(export_pattern)
     '%locale_with_underscore%',
     '%android_code%',
     '%osx_code%',
-    '%osx_xliff%',
     '%osx_locale%',
     '%original_file_name%',
     '%original_path%',
