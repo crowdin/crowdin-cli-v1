@@ -20,20 +20,30 @@ I18n.locale = :en
 #
 # +files+ - basically, it's project files details from API method `project_info`
 #
-def get_remote_files_hierarchy(files, root = '/', hierarchy = { dirs: [], files: [] })
+def get_remote_files_hierarchy(files, root = '/', hierarchy: { dirs: [], files: [] }, include_branches: true)
   files.each do |node|
     case node['node_type']
     when 'branch'
-      get_remote_files_hierarchy(node['files'], root + node['name'] + '/', hierarchy)
+      if include_branches
+        get_remote_files_hierarchy(node['files'], root + node['name'] + '/', hierarchy: hierarchy)
+      end
     when 'directory'
       hierarchy[:dirs] << "#{root}#{node['name']}"
-      get_remote_files_hierarchy(node['files'], root + node['name'] + '/', hierarchy)
+      get_remote_files_hierarchy(node['files'], root + node['name'] + '/', hierarchy: hierarchy)
     when 'file'
       hierarchy[:files] << "#{root}#{node['name']}"
     end
   end
 
   return hierarchy
+end
+
+# Return branches in Crowdin project
+#
+# +files+ - basically, it's project files details from API method `project_info`
+#
+def get_branches(files)
+  files.select { |node| node["node_type"] == "branch" }.map { |branch| branch["name"] }
 end
 
 # Return +hierarchy+ of local directories and files
@@ -226,36 +236,37 @@ end
 # +files_list+ is a Hash of key-value pairs. Where key is a possible archive filename based on current project configuration
 # and value is the expanded filename
 #
-def unzip_file_with_translations(zipfile_name, dest_path, files_list, ignore_match)
+def unzip_file_with_translations(zipfile_name, dest_path, files_list, ignore_match, ignored_paths = [])
   # overwrite files if they already exist inside of the extracted path
   Zip.on_exists_proc = true
 
   # files that exists in archive and doesn't match current project configuration
   unmatched_files = []
 
-  Zip::File.open(zipfile_name) do |zipfile|
-    zipfile.restore_permissions = false
-    zipfile.select { |zip_entry| zip_entry.file? }.each do |f|
-      filename = f.name
-      if @branch_name and @base_path_contains_branch_subfolders
+  Zip::File.open(zipfile_name) do |zip_file|
+    zip_file.restore_permissions = false
+    zip_file.select(&:file?).each do |zip_entry|
+      next if zip_entry.name.start_with?(*ignored_paths)
+
+      filename = zip_entry.name
+      if @branch_name && @base_path_contains_branch_subfolders
         # strip branch from filename
-        filename = f.name.sub(File.join(@branch_name, '/'), '')
+        filename = zip_entry.name.sub(File.join(@branch_name, '/'), '')
       end
 
-      # `f' - relative path in archive
       file = files_list[filename]
       if file
         fpath = File.join(dest_path, file)
         FileUtils.mkdir_p(File.dirname(fpath))
         puts "Extracting: `#{file}'"
-        zipfile.extract(f, fpath)
+        zip_file.extract(zip_entry, fpath)
       else
-        unmatched_files << f
+        unmatched_files << zip_entry
       end
     end
   end
 
-  unless unmatched_files.empty? or ignore_match
+  unless unmatched_files.empty? || ignore_match
     puts "Warning: Downloaded translations do not match current project configuration. The following files will be omitted:"
     unmatched_files.each { |file| puts " - `#{file}'" }
   end
@@ -309,14 +320,6 @@ def display_tree(files_tree, level = -2, branches = [])
   end
 end
 
-class String
-  def strip_heredoc
-    indent = scan(/^[ \t]*(?=\S)/).min.size || 0
-    gsub(/^[ \t]{#{indent}}/, '')
-  end
-end
-
-###
 include GLI::App
 
 version Crowdin::CLI::VERSION
@@ -719,18 +722,16 @@ command :download do |c|
   c.desc I18n.t('app.commands.download.switches.ignore_match.desc')
   c.switch ['ignore-match'], negatable: false
 
-  c.desc I18n.t('app.commands.download.switches.include_unchanged')
+  c.desc I18n.t('app.commands.download.switches.include_unchanged.desc')
   c.switch ['include-unchanged'], negatable: false
 
   c.action do |global_options, options, args|
-    if @branch_name
-      branch = @project_info['files'].find { |h| h['node_type'] == 'branch' && h['name'] == @branch_name }
+    branches = get_branches(@project_info['files'])
 
-      unless branch
-        exit_now! <<-EOS.strip_heredoc
-            path `#{@branch_name}' did not match any branch known to Crowdin
-        EOS
-      end
+    if @branch_name && !branches.include?(@branch_name)
+      exit_now! <<~HEREDOC
+          path `#{@branch_name}' did not match any branch known to Crowdin
+      HEREDOC
     end
 
     language = options[:language]
@@ -842,7 +843,7 @@ command :download do |c|
     begin
       @crowdin.download_translation(language, params)
 
-      unzip_file_with_translations(zipfile_name, @base_path, downloadable_files_hash, options['ignore-match'])
+      unzip_file_with_translations(zipfile_name, @base_path, downloadable_files_hash, options['ignore-match'], branches)
     ensure
       tempfile.close
       tempfile.unlink # delete the tempfile
@@ -865,20 +866,21 @@ command :list do |ls_cmd|
     prj_cmd.flag [:b, :branch]
 
     prj_cmd.action do |global_options, options, args|
+      branches = get_branches(@project_info['files'])
       if @branch_name
         branch = @project_info['files'].find { |h| h['node_type'] == 'branch' && h['name'] == @branch_name }
 
         unless branch
-          exit_now! <<-EOS.strip_heredoc
+          exit_now! <<~HEREDOC
             path `#{@branch_name}' did not match any branch known to Crowdin
-          EOS
+          HEREDOC
         end
 
         branch_files = [] << branch
 
         remote_project_tree = get_remote_files_hierarchy(branch_files)
       else
-        remote_project_tree = get_remote_files_hierarchy(@project_info['files'])
+        remote_project_tree = get_remote_files_hierarchy(@project_info['files'], include_branches: false)
       end
 
       if options[:tree]
@@ -1046,12 +1048,12 @@ pre do |globals, command, options, args|
   ]
 
   unless File.exist?(globals[:config])
-    exit_now! <<-EOS.strip_heredoc
+    exit_now! <<~HEREDOC
       Can't find configuration file (default `crowdin.yaml').
       Type `crowdin-cli help` to know how to specify custom configuration file
 
       See http://crowdin.com/page/cli-tool#configuration-file for more details
-    EOS
+    HEREDOC
   end
 
   # load project-specific configuration
@@ -1063,12 +1065,12 @@ pre do |globals, command, options, args|
     #
     @config = YAML.load(ERB.new(File.read(globals[:config])).result) || {}
   rescue Psych::SyntaxError => err
-    exit_now! <<-EOS.strip_heredoc
+    exit_now! <<~HEREDOC
       Could not parse YAML: #{err.message}
 
       We were unable to successfully parse the crowdin.yaml file that you provided - most likely it is not well-formatted YAML.
       Please check whether your crowdin.yaml is valid YAML - you can use the http://yamllint.com/ validator to do this - and make any necessary changes to fix it.
-    EOS
+    HEREDOC
   end
 
   # try to load the API credentials from an environment variable, e.g.
@@ -1096,37 +1098,37 @@ pre do |globals, command, options, args|
 
   ['api_key', 'project_identifier'].each do |key|
     unless @config[key]
-      exit_now! <<-EOS.strip_heredoc
+      exit_now! <<~HEREDOC
         Configuration file misses required option `#{key}`
 
         See http://crowdin.com/page/cli-tool#configuration-file for more details
-      EOS
+      HEREDOC
     end
   end
 
   unless @config['files']
-    exit_now! <<-EOS.strip_heredoc
+    exit_now! <<~HEREDOC
       Configuration file misses required section `files`
 
       See https://crowdin.com/page/cli-tool#configuration-file for more details
-    EOS
+    HEREDOC
   end
 
   @config['files'].each do |file|
     unless file['source']
-      exit_now! <<-EOS.strip_heredoc
+      exit_now! <<~HEREDOC
         Files section misses required parameter `source`
 
         See https://crowdin.com/page/cli-tool#configuration-file for more details
-      EOS
+      HEREDOC
     end
 
     unless file['translation']
-      exit_now! <<-EOS.strip_heredoc
+      exit_now! <<~HEREDOC
         Files section misses required parameter `translation`
 
         See https://crowdin.com/page/cli-tool#configuration-file for more details
-      EOS
+      HEREDOC
     end
 
     file['source'] = '/' + file['source'] unless file['source'].start_with?('/')
@@ -1134,20 +1136,20 @@ pre do |globals, command, options, args|
 
     if file['source'].include?('**')
       if file['source'].scan('**').size > 1
-        exit_now! <<-EOS.strip_heredoc
+        exit_now! <<~HEREDOC
           Source pattern `#{file['source']}` is not valid. The mask `**` can be used only once in the source pattern.
-        EOS
+        HEREDOC
       elsif file['source'].scan('**').size == 1 and !file['source'].match(/\/\*\*\//)
-        exit_now! <<-EOS.strip_heredoc
+        exit_now! <<~HEREDOC
           Source pattern `#{file['source']}` is not valid. The mask `**` must be surrounded by slashes `/` in the source pattern.
-        EOS
+        HEREDOC
       end
     else
       if file['translation'].include?('**')
-        exit_now! <<-EOS.strip_heredoc
+        exit_now! <<~HEREDOC
           Translation pattern `#{file['translation']}` is not valid. The mask `**` can't be used.
           When using `**` in 'translation' pattern it will always contain sub-path from 'source' for certain file.
-        EOS
+        HEREDOC
       end
     end
 
@@ -1157,9 +1159,9 @@ pre do |globals, command, options, args|
     @base_path = @config['base_path']
   else
     @base_path = Dir.pwd
-    puts <<-EOS.strip_heredoc
+    puts <<~HEREDOC
       Warning: Configuration file misses parameter `base_path` that defines your project root directory. Using `#{@base_path}` as a root directory.
-    EOS
+    HEREDOC
   end
 
   @base_path_contains_branch_subfolders = false
@@ -1170,9 +1172,9 @@ pre do |globals, command, options, args|
       when false
         false
       else
-        exit_now! <<-EOS.strip_heredoc
+        exit_now! <<~HEREDOC
           Parameter `base_path_contains_branch_subfolders` allows values of true or false.
-        EOS
+        HEREDOC
     end
   end
 
@@ -1182,9 +1184,9 @@ pre do |globals, command, options, args|
   end
 
   unless Dir.exist?(@base_path)
-    exit_now! <<-EOS.strip_heredoc
+    exit_now! <<~HEREDOC
       No such directory `#{@base_path}`. Please make sure that the `base_path` is properly set.
-    EOS
+    HEREDOC
   end
 
   @preserve_hierarchy = false
@@ -1195,9 +1197,9 @@ pre do |globals, command, options, args|
       when false
         false
       else
-        exit_now! <<-EOS.strip_heredoc
+        exit_now! <<~HEREDOC
           Parameter `preserve_hierarchy` allows values of true or false.
-        EOS
+        HEREDOC
     end
   end
 

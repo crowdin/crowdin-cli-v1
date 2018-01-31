@@ -68,7 +68,6 @@ en:
           include_unchanged:
             desc: |
               Download all translation files whether or not they have changes
-
       list:
         desc: Show a list of files (the current project)
         long_desc: |
@@ -83,3 +82,5 @@ en:
         switches:
           tree:
             desc: list contents of directories in a tree-like format
+          include_branches:
+            desc: include branches
