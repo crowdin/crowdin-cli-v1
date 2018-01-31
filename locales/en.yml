@@ -75,6 +75,8 @@ en:
         commands:
           project:
             desc: List information about the files that already exists in current project
+          branches:
+            desc: List remote-tracking branches
           sources:
             desc: List information about the sources files in current project that match the wild-card pattern
           translations:
