@@ -531,47 +531,6 @@ This method does not require installation. To get started:
 
 Author: Anton Maminov (anton.maminov@gmail.com)
 
-Copyright: 2012-2016 [crowdin.com](http://crowdin.com/)
+Copyright: 2012-2018 [crowdin.com](http://crowdin.com/)
 
 This project is licensed under the MIT license, a copy of which can be found in the LICENSE file.
-
-```
-
-                             `.-:://oooosyyyyyyyyyyyyyyyyyyyysoooo+///:::...                        
-                      .-//oyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyysoo//:-.`             
-                 .:+syyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyssssssssssssyyyyyyyyyyyyso+/:.`     
-             `:oyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyssoo+++///::::::::::::::::::-------::::////+ooooo+/:.
-          `:oyyyyyyyyyyyyyyyyyyyyyyyyyyyso++/::::::::::::--......````                            ```
-        -+yyyyyyyyyyyyyyyyyyyyyyyyyso+/:::::::::--...``                                             
-      .oyyyyyyyyyyyyyyyyyyyyyyyyo+::::::::--.``            ....-----------------....`               
-     /yyyyyyyyyyyyyyyyyyyyyyyo/:::::::-..`      ..-:/+oosssyyyyyyyyyyyyyyyyyyyyyssssssso++/:--`     
-   `oyyyyyyyyyyyyyyyyyyyyyyo/::::::-.`    .-/+ssyyyyyyyyyyyyyyyysssooo++////::----..........```     
-  `syyyyyyyyyyyyyyyyyyyyys/:::::-.`   .:+syyyyyyyyyyyyyyysoo+//:::---..```                          
-  oyyyyyyyyyyyyyyyyyyyyy+:::::-.   ./syyyyyyyyyyyyyyso+/::::--.``                                   
- :yyyyyyyyyyyyyyyyyyyyy+::::-.   -oyyyyyyyyyyyyyys+/::::-.``   `.--::/++++ssssssssso++++/::-.`      
- oyyyyyyyyyyyyyyyyyyyy+::::-`  .oyyyyyyyyyyyyyyo/:::-.`   .-/+ssyyyyyyyyssoo++///::----......``     
-.yyyyyyyyyyyyyyyyyyyys::::-   :syyyyyyyyyyyyys/:::-`   ./osyyyyyyyyso+/::-.````                     
-:ossyyyyyyyyyyyyyyyyy/:::-   -yyyyyyyyyyyyyy+:::-`   -oyyyyyyyyso/::-.``                            
-  ``.:/+oosssyyyyyyyo::::`  `syyyyyyyyyyyyyo:::.   `oyyyyyyyyy+::-.`                                
-     .:::::::///++oo::::-   -yyyyyyyyyyyyys:::.   `oyyyyyyyys/:-`                                   
-     -::::::::::::::::::.   /yyyyyyyyyyyyy+::-    :yyyyyyyyy/:.                                     
-     -::::::::::::::::::    .:::++ooosssss:::`    /ssyyyyyyo:-                                    
-o+/:-::::::::::::::::::-        :::::::::::::`    ``.///////:.                                  
-yyyyyyssoo++////:::::::.        ::::::::::::-     `..::::::::.                                  
-yyyyyyyyyyyyyyyysso::::.    -o+/++///////:::-     :yyssssss/:.                                 
-yyyyyyyyyyyyyyyyyyy::::.    .yyyyyyyyyyyys:::`    `yyyyyyyyo:-                                
-+yyyyyyyyyyyyyyyyyy/:::.     syyyyyyyyyyyy/::.     /yyyyyyyy/:.                              
--yyyyyyyyyyyyyyyyyy/::::     :yyyyyyyyyyyyo:::     `oyyyyyyyy/:-`                           
-`syyyyyyyyyyyyyyyyyo::::`     oyyyyyyyyyyyy+::-      /syyyyyyyo/:-.``   `````.             
- :yyyyyyyyyyyyyyyyyy/:::-     `syyyyyyyyyyyy/::-`     `/oyyyyyyyssoo+++//:-.`             
-  +yyyyyyyyyyyyyyyyyo::::-     `oyyyyyyyyyyyyo:::-`      `-://oo+///--`                   
-  `syyyyyyyyyyyyyyyyy+::::-      /yyyyyyyyyyyyyo/:::-..`         ``..`                    
-   `syyyyyyyyyyyyyyyyy+::::-`     `/syyyyyyyyyyyyso++//::::/:///:-.`                       
-    `+yyyyyyyyyyyyyyyyys/::::-`      .:+yyyyyyyyyyyyyyyysso/:.`                                     
-      -syyyyyyyyyyyyyyyyyo:::::-.`       `.---////----..                                            
-       `/syyyyyyyyyyyyyyyyyo+::::::-..``                                                            
-          -+yyyyyyyyyyyyyyyyyyso+/:::::::---......--::-..`                                          
-             -/oyyyyyyyyyyyyyyyyyyyysssoooooooo++/-.`                                               
-                 `-:/oosyyyyyyyyyyyyyooo//::.`                                                      
-
-```
