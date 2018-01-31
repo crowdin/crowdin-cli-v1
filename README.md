@@ -74,7 +74,7 @@ files:
       * `%file_extension%` - Original file extension
       * `%file_name%` - File name without extension
       * `%osx_code%` - OS X Locale identifier used to name ".lproj" directories
-      * `%osx_xliff%` - OS X Locale used to name xliff files (i.e. uk.xliff)
+      * `%osx_locale%` - OS X Locale identifier
 
          Example for Android projects:
           ```
