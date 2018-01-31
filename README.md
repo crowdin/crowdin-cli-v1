@@ -1,7 +1,7 @@
 # Crowdin-CLI Ruby is now deprecated
 
-[crowdin-cli-2](https://github.com/crowdin/crowdin-cli-2) is a ground-up rewrite in Java with a new flow, incredible speed, but the same core idea.
-This repository remains available for existing applications built on what we now call Crowdin-CLI Ruby.
+> [crowdin-cli-2](https://github.com/crowdin/crowdin-cli-2) is a ground-up rewrite in Java with a new flow, incredible speed, but the same core idea.
+> This repository remains available for existing applications built on what we now call Crowdin-CLI Ruby.
 
 ## Crowdin-CLI Ruby
 
