@@ -16,6 +16,24 @@ I18n.load_path += Dir[Pathname(__FILE__).dirname.expand_path + '../locales/*.yml
 I18n.enforce_available_locales = false
 I18n.locale = :en
 
+#! / usr / bin / env ruby
+# encoding: utf-8
+
+membutuhkan 'pp'
+membutuhkan 'menemukan'
+membutuhkan 'crowdin-cli'
+
+# Untuk tujuan pengembangan saja. Komentar di produksi
+# membutuhkan 'byebug'
+
+# GLI_DEBUG = bundel exec bin sejati / crowdin-cli
+
+# Setup i18n
+# beritahu perpustakaan I18n di mana menemukan terjemahan Anda
+I18n.load_path + = Dir [Pathname (__ FILE __). Dirname.expand_path + '../locales/*.yml']
+I18n.enforce_available_locales = salah
+I18n.locale =: en
+
 # Return +hierarchy+ of directories and files in Crowdin project
 #
 # +files+ - basically, it's project files details from API method `project_info`
