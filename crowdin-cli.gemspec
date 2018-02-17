@@ -5,28 +5,32 @@ Gem::Specification.new do |gem|
   gem.name = 'crowdin-cli'
   gem.version = Crowdin::CLI::VERSION
 
-  gem.summary = 'Crowdin CLI'
-  gem.author = ['Anton Maminov']
-  gem.email = ['anton.linux@gmail.com']
-  gem.homepage = 'https://github.com/mamantoha/crowdin-cli'
+  gem.summary = 'Crowdin CLI.'
+  gem.description = 'A command-line interface to sync files between your computer/server and Crowdin.'
+  gem.author = ['Crowdin']
+  gem.email = ['support@crowdin.net']
+  gem.homepage = 'https://github.com/crowdin/crowdin-cli/'
   gem.license = 'LICENSE'
 
   gem.files = %w(
     bin/crowdin-cli
     lib/crowdin-cli/version.rb
     lib/crowdin-cli.rb
+    locales/en.yml
     README.md
     LICENSE
   )
   gem.require_paths << 'lib'
   gem.bindir = 'bin'
   gem.executables << 'crowdin-cli'
-  gem.add_development_dependency('rake')
-  gem.add_development_dependency('rdoc')
-  gem.add_development_dependency('aruba')
-  gem.add_runtime_dependency('gli', '>= 2.1.0')
-  gem.add_runtime_dependency('rubyzip', '>= 0.9.9')
-  gem.add_runtime_dependency('crowdin-api', '>= 0.0.8')
+  gem.add_development_dependency 'rake'
+  gem.add_development_dependency 'pry'
+  gem.add_development_dependency 'rdoc'
+  gem.add_development_dependency 'aruba'
+  gem.add_runtime_dependency 'gli', '~> 2.16'
+  gem.add_runtime_dependency 'rubyzip', '~> 1.0'
+  gem.add_runtime_dependency 'crowdin-api', '~> 0.5.0'
+  gem.add_runtime_dependency 'i18n', '~> 0.8'
   gem.platform = Gem::Platform::RUBY
-  gem.required_ruby_version = '>= 1.9.3'
+  gem.required_ruby_version = '>= 2.4.0'
 end

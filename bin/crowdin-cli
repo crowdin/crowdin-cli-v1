@@ -1,24 +1,49 @@
 #!/usr/bin/env ruby
+# encoding: utf-8
 
 require 'pp'
+require 'find'
 require 'crowdin-cli'
+
+# For development purposes only. Comment in production
+# require 'byebug'
+
+# GLI_DEBUG=true bundle exec bin/crowdin-cli
+
+# Setup i18n
+# tell the I18n library where to find your translations
+I18n.load_path += Dir[Pathname(__FILE__).dirname.expand_path + '../locales/*.yml']
+I18n.enforce_available_locales = false
+I18n.locale = :en
 
 # Return +hierarchy+ of directories and files in Crowdin project
 #
 # +files+ - basically, it's project files details from API method `project_info`
 #
-def get_remote_files_hierarchy(files, root = '/', hierarchy = { dirs: [], files: [] })
+def get_remote_files_hierarchy(files, root = '/', hierarchy: { dirs: [], files: [] }, include_branches: true)
   files.each do |node|
     case node['node_type']
+    when 'branch'
+      if include_branches
+        get_remote_files_hierarchy(node['files'], root + node['name'] + '/', hierarchy: hierarchy)
+      end
     when 'directory'
       hierarchy[:dirs] << "#{root}#{node['name']}"
-      get_remote_files_hierarchy(node['files'], root + node['name'] + '/', hierarchy)
+      get_remote_files_hierarchy(node['files'], root + node['name'] + '/', hierarchy: hierarchy)
     when 'file'
       hierarchy[:files] << "#{root}#{node['name']}"
     end
   end
 
   return hierarchy
+end
+
+# Return branches in Crowdin project
+#
+# +files+ - basically, it's project files details from API method `project_info`
+#
+def get_branches(files)
+  files.select { |node| node["node_type"] == "branch" }.map { |branch| branch["name"] }
 end
 
 # Return +hierarchy+ of local directories and files
@@ -49,42 +74,141 @@ end
 # @option lang [String] :locale
 #
 def export_pattern_to_path(path, export_pattern, lang, languages_mapping = nil)
-  original_path      = File.dirname(path)
+  original_path      = File.dirname(path)[1..-1]
   original_file_name = File.basename(path)
   file_extension     = File.extname(path)[1..-1]
   file_name          = File.basename(path, File.extname(path))
 
   pattern = {
-    '%language%'               => lang['name'],
-    '%two_letters_code%'       => lang['iso_639_1'],
-    '%tree_letters_code%'      => lang['iso_639_3'],
-    '%locale%'                 => lang['locale'],
-    '%locale_with_underscore%' => lang['locale'].gsub('-', '_'),
-    '%android_code%'           => android_locale_code(lang['locale']),
     '%original_file_name%'     => original_file_name,
     '%original_path%'          => original_path,
     '%file_extension%'         => file_extension,
     '%file_name%'              => file_name,
+    '%language%'               => lang['name'],
+    '%two_letters_code%'       => lang['iso_639_1'],
+    '%three_letters_code%'     => lang['iso_639_3'],
+    '%locale%'                 => lang['locale'],
+    '%locale_with_underscore%' => lang['locale'].gsub('-', '_'),
+    '%android_code%'           => lang['android_code'],
+    '%osx_code%'               => lang['osx_code'],
+    '%osx_locale%'             => lang['osx_locale'],
   }
 
+  placeholders = pattern.inject([]){ |memo, h| memo << h.first[/%(.*)%/, 1] }
+
   unless languages_mapping.nil?
-    pattern = Hash[pattern.map{|k, str| [
-      k,
-      (languages_mapping[k[/%(.*)%/, 1]][str] rescue nil) || str]
+    pattern = Hash[pattern.map { |placeholder, str| [
+      placeholder,
+      (languages_mapping[placeholder[/%(.*)%/, 1]][lang['crowdin_code']] rescue nil) || str]
     }]
   end
 
-  export_pattern.gsub(/%.+?%/, pattern)
+  export_pattern.gsub(/%(#{placeholders.join('|')})%/, pattern)
 end
 
-def android_locale_code(locale_code)
-  locale_code = case locale_code
-    when 'he-IL' then 'iw-IL'
-    when 'yi-DE' then 'ji-DE'
-    when 'id-ID' then 'in-ID'
-    else locale_code
+# @param [String] path relative path to file in Crowdin project
+# @param [String] source basically, is a file['source'] from crowdin.yaml
+# @param [String] translation basically, is a file['translation'] from crowdin.yaml
+#
+def construct_export_pattern(path, source, translation)
+  pattern_regexp = translate_pattern_to_regexp(source)
+  if pattern_regexp.names.include?('double_asterisk') && path.match(pattern_regexp)
+    double_asterisk = path.match(pattern_regexp)['double_asterisk']
+    translation = translation.sub('**', double_asterisk)
   end
-  return locale_code.sub('-', '-r')
+
+  export_pattern = translation.split('/').reject(&:empty?).join('/')
+  export_pattern.insert(0, '/') if translation.start_with?('/')
+
+  return export_pattern
+end
+
+# This is a partial translation of the algorithm defined in fnmatch.py
+# https://github.com/python-git/python/blob/master/Lib/fnmatch.py
+# Provides a partial implementation of translate a glob +pat+ to a regular expression
+#
+# Patterns are Unix shell style:
+# *       matches everything
+# ?       matches any single character
+# [seq]   matches any character in seq
+# [^seq]  matches any char not in seq
+#
+# NOTE:
+# `**` surrounded by backslashes `/` in the +pat+
+# `**` used only once in the +pat+
+#
+def translate_pattern_to_regexp(pat)
+  i = 0
+  n = pat.size
+  res = ''
+  while i < n
+    c = pat[i]
+    i = i + 1
+    if c == '*'
+      j = i
+      if j < n && pat[j] == '*'
+        res[-1] = '(\/)?(?<double_asterisk>.*)?'
+        i = j + 1
+      else
+        res = res + '.*'
+      end
+    elsif c == '?'
+      res = res + '.'
+    elsif c == '['
+      j = i
+      # The following two statements check if the sequence we stumbled
+      # upon is '[]' or '[^]' because those are not valid character
+      # classes.
+      if j < n && pat[j] == '^'
+        j = j + 1
+      end
+      if j < n && pat[j] == ']'
+        j = j + 1
+      end
+      # Look for the closing ']' right off the bat. If one is not found,
+      # escape the opening '[' and continue.  If it is found, process
+      # he contents of '[...]'.
+      while j < n && pat[j] != ']'
+        j = j + 1
+      end
+      if j >= n
+        res = res + '\\['
+      else
+        stuff = pat[i...j].gsub('\\', '\\\\')
+        i = j + 1
+        #if stuff[0] == '!'
+        #  stuff = '^' + stuff[1..-1]
+        #elsif stuff[0] == '^'
+        #  stuff = '\\' + stuff
+        #end
+        res = "#{res}[#{stuff}]"
+      end
+    else
+      res = res + Regexp.escape(c)
+    end
+  end
+
+  return Regexp.new(res + '$')
+end
+
+def get_invalid_placeholders(export_pattern)
+  valid_placeholders = [
+    '%language%',
+    '%two_letters_code%',
+    '%three_letters_code%',
+    '%locale%',
+    '%locale_with_underscore%',
+    '%android_code%',
+    '%osx_code%',
+    '%osx_locale%',
+    '%original_file_name%',
+    '%original_path%',
+    '%file_extension%',
+    '%file_name%',
+  ]
+
+  all_placeholders = export_pattern.scan(/%[a-z0-9_]*?%/)
+  invalid_placeholders = all_placeholders - valid_placeholders
 end
 
 # Return a string representing that part of the directory tree that is common to all the files
@@ -92,356 +216,1031 @@ end
 # @params [Array] paths set of strings representing directory paths
 #
 def find_common_directory_path(paths)
-  return paths.first.split('/').slice(0...-1).join('/') if paths.length <= 1
-  arr = paths.sort
-  first = arr.first.split('/')
-  last = arr.last.split('/')
-  i = 0
-  i += 1 while first[i] == last[i] && i <= first.length
-  first.slice(0, i).join('/')
+  case paths.length
+    when 0
+      return '/'
+    when 1
+      return paths.first.split('/').slice(0...-1).join('/')
+    else
+      arr = paths.sort
+      first = arr.first.split('/')
+      last = arr.last.split('/')
+      i = 0
+      i += 1 while first[i] == last[i] && i <= first.length
+      first.slice(0, i).join('/')
+  end
 end
 
-def unzip_file(zip, dest, files_list)
+# Extract compressed files +files_list+ in a ZIP archive +zipfile_name+ to +dest_path+
+#
+# +files_list+ is a Hash of key-value pairs. Where key is a possible archive filename based on current project configuration
+# and value is the expanded filename
+#
+def unzip_file_with_translations(zipfile_name, dest_path, files_list, ignore_match, ignored_paths = [])
   # overwrite files if they already exist inside of the extracted path
-  Zip.options[:on_exists_proc] = true
+  Zip.on_exists_proc = true
 
-  Zip::ZipFile.open(zip) do |zip_file|
-    zip_file.select{|f| f.file?}.each do |f|
-      file = files_list[f.name]
-      f_path = File.join(dest, file)
-      FileUtils.mkdir_p(File.dirname(f_path))
-      puts "Download: #{file}"
-      zip_file.extract(f, f_path)
+  # files that exists in archive and doesn't match current project configuration
+  unmatched_files = []
+
+  Zip::File.open(zipfile_name) do |zip_file|
+    zip_file.restore_permissions = false
+    zip_file.select(&:file?).each do |zip_entry|
+      next if zip_entry.name.start_with?(*ignored_paths)
+
+      filename = zip_entry.name
+      if @branch_name && @base_path_contains_branch_subfolders
+        # strip branch from filename
+        filename = zip_entry.name.sub(File.join(@branch_name, '/'), '')
+      end
+
+      file = files_list[filename]
+      if file
+        fpath = File.join(dest_path, file)
+        FileUtils.mkdir_p(File.dirname(fpath))
+        puts "Extracting: `#{file}'"
+        zip_file.extract(zip_entry, fpath)
+      else
+        unmatched_files << zip_entry
+      end
+    end
+  end
+
+  unless unmatched_files.empty? || ignore_match
+    puts "Warning: Downloaded translations do not match current project configuration. The following files will be omitted:"
+    unmatched_files.each { |file| puts " - `#{file}'" }
+  end
+end
+
+# Build a Hash tree from Array of +filenames*
+#
+def build_hash_tree(filenames)
+  files_tree = filenames.inject({}) { |h, i| t = h; i.split("/").each { |n| t[n] ||= {}; t = t[n] }; h }
+end
+
+# Box-drawing character - https://en.wikipedia.org/wiki/Box-drawing_character
+# ├  └  ─  │
+#
+def display_tree(files_tree, level = -2, branches = [])
+  level += 1
+
+  files_tree.each_with_index do |(key, val), index|
+    if val.empty? # this is a file
+      result = branches.take(level).inject('') { |s, i| s << (i == 1 ? '│' : '').ljust(4) }
+
+      if index == files_tree.length - 1
+        # this is a last element
+        result << '└' + '──' + ' ' + key
+      else
+        result << '├' + '──' + ' ' + key
+      end
+
+      puts result
+    else # this is directory
+      if key == '' # root directory
+        result = '.'
+      else
+        result = branches.take(level).inject('') { |s, i| s << (i == 1 ? '│' : '').ljust(4) }
+        if index == files_tree.length - 1
+          # this is a last element
+          result << '└' + '──' + ' ' + key
+
+          branches[level] = 0
+        else
+          result << '├' + '──' + ' ' + key
+
+          branches[level] = 1
+        end
+      end
+      puts result
+
+      # recursion \(^_^)/
+      display_tree(val, level, branches)
     end
   end
 end
 
-###
 include GLI::App
-
-program_desc 'A CLI to sync locale files with crowdin.net'
 
 version Crowdin::CLI::VERSION
 
-desc 'Be verbose'
-switch [:v, :verbose]
+subcommand_option_handling :normal
 
-desc 'Path to config file'
+program_desc I18n.t('app.desc')
+program_long_desc I18n.t('app.long_desc')
+sort_help :manually # help commands are ordered in the order declared
+wrap_help_text :to_terminal
+
+desc I18n.t('app.switches.verbose.desc')
+switch [:v, :verbose], negatable: false
+
+desc I18n.t('app.flags.config.desc')
 default_value File.join(Dir.pwd, 'crowdin.yaml')
 arg_name '<s>'
 flag [:c, :config]
 
-desc 'Upload existing translations to Crowdin project'
-#arg_name 'Describe arguments to upload here'
+desc I18n.t('app.flags.identity.desc')
+default_value File.join(Dir.home, '.crowdin.yaml')
+arg_name '<s>'
+flag [:identity]
+
+desc I18n.t('app.commands.upload.desc')
+long_desc I18n.t('app.commands.upload.long_desc')
 command :upload do |c|
-  # Command 'upload' requires a subcommand
-  #
-  #c.action do |global_options, options, args|
-  #  puts "upload command ran"
-  #end
 
-  #c.default_command :all
-
-  #c.desc 'Upload source and translation files'
-  #c.command :all do |c|
-  #  c.action do |global_options, options, args|
-  #    puts options
-  #    puts "`upload all` command ran"
-  #  end
-  #end
-
-  c.desc 'Upload source files'
+  c.desc I18n.t('app.commands.upload.commands.sources.desc')
+  c.long_desc I18n.t('app.commands.upload.commands.sources.long_desc')
   c.command :sources do |c|
 
-    c.desc 'defines whether to add sources if there is the same file previously added'
-    c.switch [:ignore_duplicates]
+    c.desc I18n.t('app.commands.upload.commands.sources.switches.auto_update.desc')
+    c.default_value true
+    c.switch ['auto-update']
+
+    c.desc I18n.t('app.flags.branch.desc')
+    c.arg_name 'branch_name'
+    c.flag [:b, :branch]
 
     c.action do |global_options, options, args|
-      project_info = @crowdin.project_info
-
-      source_language = project_info['details']['source_language']['code']
+      source_language = @project_info['details']['source_language']['code']
 
       # Crowdin supported languages list
       supported_languages = @crowdin.supported_languages
-      source_language = supported_languages.find{ |lang| lang['crowdin_code'] == source_language }
+      source_language = supported_languages.find { |lang| lang['crowdin_code'] == source_language }
 
-      remote_project_tree = get_remote_files_hierarchy(project_info['files'])
+      if @branch_name
+        branch = @project_info['files'].find { |h| h['node_type'] == 'branch' && h['name'] == @branch_name }
+
+        if branch
+          branch_files = [] << branch
+        else
+          print "Creating a new branch `#{@branch_name}'"
+
+          @crowdin.add_directory(@branch_name, is_branch: '1')
+
+          puts "\rCreating a new branch `#{@branch_name}' - OK"
+          branch_files = []
+        end
+
+        remote_project_tree = get_remote_files_hierarchy(branch_files)
+
+        # Remove branch directory from a directory path string
+        remote_project_tree[:dirs].map! { |p| p.split('/')[2..-1].unshift('').join('/') }
+        remote_project_tree[:files].map! { |p| p.split('/')[2..-1].unshift('').join('/') }
+      else
+        # INFO it also includes all branches
+        remote_project_tree = get_remote_files_hierarchy(@project_info['files'])
+      end
 
       local_files = []
       dest_files = []
 
       @config['files'].each do |file|
-        if File.exist?("#{@base_path}#{file['source']}")
-          dest_files << file['source']
-          local_files << { dest: file['source'], source: "#{@base_path}#{file['source']}", export_pattern: file['translation'] }
-        else
-          Dir.glob("#{@base_path}#{file['source']}").each do |source|
-            dest = source.sub("#{@base_path}", '') # relative path in Crowdin
-            dest_files << dest
+        get_invalid_placeholders(file['translation']).each do |placeholder|
+          puts "Warning: #{placeholder} is not valid variable supported by Crowdin. See http://crowdin.com/page/cli-tool#configuration-file for more details."
+        end
 
-            file_pattern = export_pattern_to_path(dest, file['translation'], source_language)
+        ignores = file['ignore'] || []
 
-            diff = (dest.split('/') - file_pattern.split('/')).join('/')
-            export_pattern = file['translation'].sub('**', diff)
+        if File.exist?(File.join(@base_path, file['source']))
+          dest = file['dest'] || file['source']
+          type = file['type']
 
-            local_files << { dest: dest, source: source, export_pattern: export_pattern }
+          dest_files << dest
+
+          local_file = { dest: dest, source: File.join(@base_path, file['source']), export_pattern: file['translation'], type: type }
+
+          @allowed_options.each do |option|
+            local_file.merge!({ option.to_sym => file[option] }) if file.has_key?(option)
           end
 
-        end
+          local_files << local_file
+        else
+          Find.find(@base_path) do |source_path|
+            dest = source_path.sub(/\A#{Regexp.escape(@base_path)}/, '') # relative path in Crowdin
+            type = file['type']
+
+            if File.directory?(source_path)
+              if ignores.any? { |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
+                Find.prune # Don't look any further into this directory
+              else
+                next
+              end
+            elsif File.fnmatch?(file['source'], dest, File::FNM_PATHNAME)
+              next if ignores.any? { |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
+
+              dest_files << dest
+
+              export_pattern = construct_export_pattern(dest, file['source'], file['translation'])
+
+              local_file = { dest: dest, source: source_path, export_pattern: export_pattern, type: type }
+
+              @allowed_options.each do |option|
+                local_file.merge!({ option.to_sym => file[option] }) if file.has_key?(option)
+              end
+
+              local_files << local_file
+            end
+          end # Find
+
+        end # if File.exist?
+      end # @config['files']
+
+      if dest_files.empty?
+        exit_now! <<-EOS.strip_heredoc
+          No source files to upload.
+          Check your configuration file to ensure that they contain valid directives.
+          See http://crowdin.com/page/cli-tool#configuration-file for more details.
+        EOS
       end
 
-      exit_now!("Nothing to upload") if local_files.empty?
+      common_dir = @preserve_hierarchy ? '' : find_common_directory_path(dest_files)
 
-      common_dir = find_common_directory_path(dest_files)
+      local_project_tree = get_local_files_hierarchy(local_files.collect { |h| h[:dest].sub(common_dir, '') })
 
-      local_project_tree = get_local_files_hierarchy(local_files.collect{ |h| h[:dest].sub(common_dir, '') })
-
-      local_files.each{ |file| file[:dest].sub!(common_dir, '') }
+      local_files.each { |file| file[:dest].sub!(common_dir, '') }
 
       # Create directory tree
       #
       create_dirs = local_project_tree[:dirs] - remote_project_tree[:dirs]
       create_dirs.each do |dir|
-        puts "Create directory `#{dir}`"
-        @crowdin.add_directory(dir)
+        # FIXME if directory path starts with / Crowdin returns an error:
+        # 17: Specified directory was not found
+        dir.slice!(0) if dir.start_with?('/')
+
+        print "Creating directory `#{dir}'"
+
+        @crowdin.add_directory(dir, branch: @branch_name)
+
+        puts "\rCreating directory `#{dir}' - OK"
       end
 
-      unless options[:ignore_duplicates]
+      if options['auto-update']
         # Update existing files in Crowdin project
         #
         # array containing elements common to the two arrays
         update_files = local_project_tree[:files] & remote_project_tree[:files]
-        files_for_upload = local_files.select{ |file| update_files.include?(file[:dest]) }
+        files_for_upload = local_files.select { |file| update_files.include?(file[:dest]) }
         files_for_upload.each do |file|
-          puts "Update file `#{file[:dest]}`"
-          @crowdin.update_file([] << file)
+          file[:dest].slice!(0) if file[:dest].start_with?('/')
+
+          params = {}
+          params[:branch] = @branch_name if @branch_name
+
+          @allowed_options.each do |option|
+            params[option.to_sym] = file.delete(option.to_sym)
+          end
+
+          print "Updating source file `#{file[:dest]}'"
+
+          resp = @crowdin.update_file([] << file, params)
+
+          case resp['files'].first[1]
+          when 'skipped'
+            puts "\rUpdating source file `#{file[:dest]}' - Skipped"
+          when 'updated'
+            puts "\rUpdating source file `#{file[:dest]}' - OK"
+          end
         end
       end
 
       # Add new files to Crowdin project
       #
       add_files = local_project_tree[:files] - remote_project_tree[:files]
-      files_for_add = local_files.select{ |file| add_files.include?(file[:dest]) }
+      files_for_add = local_files.select { |file| add_files.include?(file[:dest]) }
       files_for_add.each do |file|
-        puts "Add new file `#{file[:dest]}`"
-        @crowdin.add_file([] << file)
+        # If file path starts with / Crowdin returns error
+        # 17: Specified directory was not found
+        # make sure that file[:dest] not start with '/'
+        file[:dest].slice!(0) if file[:dest].start_with?('/')
+
+        params = {}
+        params[:type] = file.delete(:type) if file[:type]
+        params[:branch] = @branch_name if @branch_name
+
+        @allowed_options.each do |option|
+          params[option.to_sym] = file.delete(option.to_sym)
+        end
+
+        print "Uploading source file `#{file[:dest]}'"
+
+        @crowdin.add_file([] << file, params)
+
+        puts "\rUploading source file `#{file[:dest]}' - OK"
       end
 
     end # action
-  end # command
+  end # upload sources
 
-  c.desc 'Upload translation files'
+  c.desc I18n.t('app.commands.upload.commands.translations.desc')
+  c.long_desc I18n.t('app.commands.upload.commands.translations.long_desc')
   c.command :translations do |c|
 
-    c.desc 'the language of translation you need'
+    c.desc I18n.t('app.commands.upload.commands.translations.flags.language.desc')
     c.default_value 'all'
-    c.arg_name 'language_code'
+    c.arg_name 'crowdin_language_code'
     c.flag [:l, :language]
 
-    c.desc 'defines whether to add translation if there is the same translation previously added'
-    c.switch [:import_duplicates]
+    c.desc I18n.t('app.flags.branch.desc')
+    c.arg_name 'branch_name'
+    c.flag [:b, :branch]
 
-    c.desc 'defines whether to add translation if it is equal to source string at Crowdin'
-    c.switch [:import_eq_suggestions]
+    c.desc I18n.t('app.commands.upload.commands.translations.switches.import_duplicates.desc')
+    c.switch ['import-duplicates']
 
-    c.desc 'mark uploaded translations as approved'
-    c.switch [:auto_approve_imported]
+    c.desc I18n.t('app.commands.upload.commands.translations.switches.import_eq_suggestions.desc')
+    c.switch ['import-eq-suggestions']
 
+    c.desc I18n.t('app.commands.upload.commands.translations.switches.auto_approve_imported.desc')
+    c.switch ['auto-approve-imported']
 
     c.action do |global_options, options, args|
+      params = {}
+      params[:import_duplicates]     = options['import-duplicates']     ? 1 : 0
+      params[:import_eq_suggestions] = options['import-eq-suggestions'] ? 1 : 0
+      params[:auto_approve_imported] = options['auto-approve-imported'] ? 1 : 0
+
       language = options[:language]
 
-      project_info = @crowdin.project_info
+      if @branch_name
+        branch = @project_info['files'].find { |h| h['node_type'] == 'branch' && h['name'] == @branch_name }
 
-      remote_project_tree = get_remote_files_hierarchy(project_info['files'])
+        if branch
+          params[:branch] = @branch_name
+          branch_files = [] << branch
+        else
+          exit_now!("branch '#{@branch_name}' doesn't exist in the project")
+        end
+
+        remote_project_tree = get_remote_files_hierarchy(branch_files)
+
+        # Remove branch directory from a directory path string
+        remote_project_tree[:dirs].map! { |p| p.split('/')[2..-1].unshift('').join('/') }
+        remote_project_tree[:files].map! { |p| p.split('/')[2..-1].unshift('').join('/') }
+      else
+        remote_project_tree = get_remote_files_hierarchy(@project_info['files'])
+      end
+
+      project_languages = @project_info['languages'].collect { |h| h['code'] }
 
       if language == 'all'
-        project_languages = project_info['languages'].collect{ |h| h['code'] }
+        # do nothing
       else
-        project_languages = [] << language
+        if project_languages.include?(language)
+          project_languages = [] << language
+        else
+          exit_now!("language '#{language}' doesn't exist in the project")
+        end
       end
 
       supported_languages = @crowdin.supported_languages
-      translation_languages = supported_languages.select{ |lang| project_languages.include?(lang['crowdin_code']) }
 
-      source_language = project_info['details']['source_language']['code']
-      source_language = supported_languages.find{ |lang| lang['crowdin_code'] == source_language }
+      source_language = @project_info['details']['source_language']['code']
+      source_language = supported_languages.find { |lang| lang['crowdin_code'] == source_language }
+
+      translation_languages = supported_languages.select { |lang| project_languages.include?(lang['crowdin_code']) }
 
       translated_files = Hash.new{ |hash, key| hash[key] = Array.new }
       dest_files = []
 
       @config['files'].each do |file|
+        get_invalid_placeholders(file['translation']).each do |placeholder|
+          puts "Warning: #{placeholder} is not valid variable supported by Crowdin. See http://crowdin.com/page/cli-tool#configuration-file for more details."
+        end
+
+        ignores = file['ignore'] || []
+
         languages_mapping = file['languages_mapping']
 
-        if File.exists?("#{@base_path}#{file['source']}")
-          dest = file['source'].sub("#{@base_path}", '')
+        # CSV files only (default: false)
+        multilingual_spreadsheet = file['multilingual_spreadsheet'] || false
+
+        if multilingual_spreadsheet
+          file_translation_languages = [] << source_language
+        else
+          file_translation_languages = translation_languages
+        end
+
+        if File.exist?(File.join(@base_path, file['source']))
+          dest = file['dest'] || file['source']
+          dest.sub!(/\A#{Regexp.escape(@base_path)}/, '')
           dest_files << dest
 
-          translation_languages.each do |lang|
-            source = export_pattern_to_path(dest, file['translation'], lang)
-            translated_files[lang['crowdin_code']] << { source: "#{@base_path}#{source}", dest: dest }
+          file_translation_languages.each do |lang|
+            source = export_pattern_to_path(dest, file['translation'], lang, languages_mapping)
+            translated_files[lang['crowdin_code']] << { source: File.join(@base_path, source), dest: dest }
           end
         else
-          Dir.glob("#{@base_path}#{file['source']}").each do |source|
-            dest = source.sub("#{@base_path}", '') # relative path in Crowdin
-            dest_files << dest
+          Find.find(@base_path) do |source_path|
+            dest = source_path.sub(/\A#{Regexp.escape(@base_path)}/, '') # relative path in Crowdin
 
-            file_pattern = export_pattern_to_path(dest, file['translation'], source_language)
+            if File.directory?(source_path)
+              if ignores.any? { |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
+                Find.prune # Don't look any further into this directory
+              else
+                next
+              end
+            elsif File.fnmatch?(file['source'], dest, File::FNM_PATHNAME)
+              next if ignores.any? { |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
 
-            diff = (dest.split('/') - file_pattern.split('/')).join('/')
-            export_pattern = file['translation'].sub('**', diff) # !!!
+              dest_files << dest
 
-            translation_languages.each do |lang|
-              source = export_pattern_to_path(dest, export_pattern, lang, languages_mapping)
-              translated_files[lang['crowdin_code']] << { source: "#{@base_path}#{source}", dest: dest }
+              export_pattern = construct_export_pattern(dest, file['source'], file['translation'])
+
+              file_translation_languages.each do |lang|
+                source = export_pattern_to_path(dest, export_pattern, lang, languages_mapping)
+                translated_files[lang['crowdin_code']] << { source: File.join(@base_path, source), dest: dest }
+              end
+
             end
+          end # Find
 
-          end
         end # if
       end # @config['files']
 
-      exit_now!("Nothing to upload") if dest_files.empty?
+      if dest_files.empty?
+        exit_now! <<-EOS.strip_heredoc
+          No translation files to upload.
+          Check your configuration file to ensure that they contain valid directives.
+          See https://crowdin.com/page/cli-tool#configuration-file for more details.
+        EOS
+      end
 
-      params = {}
-      params[:import_duplicates]     = options[:import_dublicates]     ? 1 : 0
-      params[:import_eq_suggestions] = options[:import_eq_suggestions] ? 1 : 0
-      params[:auto_approve_imported] = options[:auto_approve_imported] ? 1 : 0
+      common_dir = @preserve_hierarchy ? '' : find_common_directory_path(dest_files)
 
-      common_dir = find_common_directory_path(dest_files)
-
-      translated_files.each do |language, files|
+      translated_files.each_pair do |language, files|
         files.each do |file|
-          file[:dest].sub!(common_dir, '')
+          file[:dest] = file[:dest].sub(common_dir, '')
+          source_file = file[:source].sub(/\A#{Regexp.escape(@base_path)}/, '')
+
           if remote_project_tree[:files].include?(file[:dest])
             if File.exist?(file[:source])
-              puts "Uploading #{file[:source].sub(@base_path, '')}"
-              @crowdin.upload_translation([] << file, language, params)
+              # If file path starts with / Crowdin returns error
+              # 17: Specified directory was not found
+              # make sure that file[:dest] not start with '/'
+              file[:dest].slice!(0) if file[:dest].start_with?('/')
+
+              print "Uploading translation file `#{source_file}'"
+
+              resp = @crowdin.upload_translation([] << file, language, params)
+
+              case resp['files'].first[1]
+              when 'skipped'
+                puts "\rUploading translation file `#{source_file}' - Skipped"
+              when 'uploaded'
+                puts "\rUploading translation file `#{source_file}' - OK"
+              when 'not_allowed'
+                puts "\rUploading translation file `#{source_file}' - is not possible"
+              end
             else
-              puts "Local file #{file[:source]} not exists"
+              puts "Warning: Local file `#{file[:source]}' does not exist"
             end
           else
-            # if source file not exist, don't upload translation
-            puts "Skip #{file[:source].sub(@base_path, '')}"
+            # if source file does not exist, don't upload translations
+            puts "Warning: Skip `#{source_file}'. Translation can not be uploaded for a non-existent source file `#{file[:dest]}'. Please upload sources first."
           end
         end
       end
 
     end # action
-  end # command
+  end # upload translations
 
 end
 
-desc 'Download existing translations'
+desc I18n.t('app.commands.download.desc')
 #arg_name 'Describe arguments to download here'
 command :download do |c|
 
-  c.desc 'the language of translation you need'
+  c.desc I18n.t('app.commands.download.flags.language.desc')
+  c.long_desc I18n.t('app.commands.download.flags.language.long_desc')
   c.arg_name 'language_code'
-  c.flag :l, :language, :default_value => 'all'
+  c.flag [:l, :language], default_value: 'all'
 
-  c.action do |global_options ,options, args|
-    # use export API method before to download the most recent translations
-    #@crowdin.export_translations
+  c.desc I18n.t('app.flags.branch.desc')
+  c.arg_name 'branch_name'
+  c.flag [:b, :branch]
 
-    language = options[:language]
-    project_info = @crowdin.project_info
+  c.desc I18n.t('app.commands.download.switches.ignore_match.desc')
+  c.switch ['ignore-match'], negatable: false
 
-    remote_project_tree = get_remote_files_hierarchy(project_info['files'])
+  c.desc I18n.t('app.commands.download.switches.include_unchanged.desc')
+  c.switch ['include-unchanged'], negatable: false
 
-    if language == 'all'
-      project_languages = project_info['languages'].collect{ |h| h['code'] }
-    else
-      project_languages = [] << language
+  c.action do |global_options, options, args|
+    branches = get_branches(@project_info['files'])
+
+    if @branch_name && !branches.include?(@branch_name)
+      exit_now! <<~HEREDOC
+          path `#{@branch_name}' did not match any branch known to Crowdin
+      HEREDOC
     end
 
+    language = options[:language]
+
     supported_languages = @crowdin.supported_languages
-    translation_languages = supported_languages.select{ |lang| project_languages.include?(lang['crowdin_code']) }
 
-    source_language = project_info['details']['source_language']['code']
-    source_language = supported_languages.find{ |lang| lang['crowdin_code'] == source_language }
+    project_languages = @project_info['languages'].collect { |h| h['code'] }
 
-    # keys is all possible files in zip archive
+    if language == 'all'
+      if @jipt_language
+        if supported_languages.find { |lang| lang['crowdin_code'] == @jipt_language }
+          project_languages << @jipt_language # crowdin_language_code
+        else
+          exit_now!("invalid jipt language `#{@jipt_language}`")
+        end
+      end
+    else
+      if project_languages.include?(language)
+        project_languages = [] << language
+      else
+        exit_now!("language '#{language}' doesn't exist in a project")
+      end
+    end
+
+    params = {}
+    params[:branch] = @branch_name if @branch_name
+
+    unless options['include-unchanged']
+      # use export API method before to download the most recent translations
+      print 'Building ZIP archive with the latest translations '
+      export_translations = @crowdin.export_translations(params)
+      if export_translations['success']
+        if export_translations['success']['status'] == 'built'
+          puts "- OK"
+        elsif export_translations['success']['status'] == 'skipped'
+          puts "- Skipped"
+          puts "Warning: Export was skipped. Please note that this method can be invoked only once per 30 minutes."
+        end
+      end
+    end
+
+    source_language = @project_info['details']['source_language']['code']
+    source_language = supported_languages.find { |lang| lang['crowdin_code'] == source_language }
+
+    translation_languages = supported_languages.select { |lang| project_languages.include?(lang['crowdin_code']) }
+
+    # keys is all possible files in .ZIP archive
     # values is resulted local files
-    # usually they are equal
-    downloadable_files = {}
+    downloadable_files_hash = {}
 
     @config['files'].each do |file|
-      languages_mapping = file['languages_mapping'] #Hash or NilClass
+      languages_mapping = file['languages_mapping'] # Hash or NilClass
 
-      if File.exists?("#{@base_path}#{file['source']}")
-        dest = file['source'].sub("#{@base_path}", '')
+      ignores = file['ignore'] || []
 
-        translation_languages.each do |lang|
-          zipper_file = export_pattern_to_path(dest, file['translation'], lang)
-          local_file  = export_pattern_to_path(dest, file['translation'], lang, languages_mapping)
+      # CSV files only (default: false)
+      multilingual_spreadsheet = file['multilingual_spreadsheet'] || false
 
-          downloadable_files[zipped_file] = local_file
-        end
+      if multilingual_spreadsheet
+        file_translation_languages = [] << source_language
       else
-        Dir.glob("#{@base_path}#{file['source']}").each do |source|
-          dest = source.sub("#{@base_path}", '') # relative path in Crowdin
+        file_translation_languages = translation_languages
+      end
 
-          file_pattern = export_pattern_to_path(dest, file['translation'], source_language)
+      if File.exist?(File.join(@base_path, file['source']))
+        dest = file['source'].sub(/\A#{Regexp.escape(@base_path)}/, '')
 
-          diff = (dest.split('/') - file_pattern.split('/')).join('/')
-          export_pattern = file['translation'].sub('**', diff)
-
-          translation_languages.each do |lang|
-            zipped_file = export_pattern_to_path(dest, export_pattern, lang)
-            local_file  = export_pattern_to_path(dest, export_pattern, lang, languages_mapping)
-
-            downloadable_files[zipped_file] = local_file
-          end
-
+        file_translation_languages.each do |lang|
+          zipped_file = export_pattern_to_path(dest, file['translation'], lang)
+          zipped_file.sub!(/^\//, '')
+          local_file  = export_pattern_to_path(dest, file['translation'], lang, languages_mapping)
+          downloadable_files_hash[zipped_file] = local_file
         end
+
+      else
+        Find.find(@base_path) do |source_path|
+          dest = source_path.sub(/\A#{Regexp.escape(@base_path)}/, '') # relative path in Crowdin
+
+          if File.directory?(source_path)
+            if ignores.any? { |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
+              Find.prune # Don't look any further into this directory
+            else
+              next
+            end
+          elsif File.fnmatch?(file['source'], dest, File::FNM_PATHNAME)
+            next if ignores.any? { |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
+
+            export_pattern = construct_export_pattern(dest, file['source'], file['translation'])
+
+            file_translation_languages.each do |lang|
+              zipped_file = export_pattern_to_path(dest, export_pattern, lang)
+              zipped_file.sub!(/^\//, '')
+              local_file  = export_pattern_to_path(dest, export_pattern, lang, languages_mapping)
+              downloadable_files_hash[zipped_file] = local_file
+            end
+
+          end
+        end # Find
       end # if
     end # @config['files']
 
-    ##
-    file = Tempfile.new(language)
+    tempfile = Tempfile.new(language)
+    zipfile_name = tempfile.path
+
+    params = {}
+    params[:output] = zipfile_name
+    params[:branch] = @branch_name if @branch_name
+
     begin
-      @crowdin.download_translation(language, :output => file)
-      unzip_file(file, @base_path, downloadable_files)
+      @crowdin.download_translation(language, params)
+
+      unzip_file_with_translations(zipfile_name, @base_path, downloadable_files_hash, options['ignore-match'], branches)
     ensure
-      file.close
-      file.unlink # delete the temp file
+      tempfile.close
+      tempfile.unlink # delete the tempfile
+    end
+
+  end # action
+end # download
+
+desc I18n.t('app.commands.list.desc')
+long_desc I18n.t('app.commands.list.long_desc')
+command :list do |ls_cmd|
+
+  ls_cmd.desc I18n.t('app.commands.list.commands.project.desc')
+  ls_cmd.command :project do |prj_cmd|
+    prj_cmd.desc I18n.t('app.commands.list.switches.tree.desc')
+    prj_cmd.switch ['tree'], negatable: false
+
+    prj_cmd.desc I18n.t('app.flags.branch.desc')
+    prj_cmd.arg_name 'branch_name'
+    prj_cmd.flag [:b, :branch]
+
+    prj_cmd.action do |global_options, options, args|
+      branches = get_branches(@project_info['files'])
+      if @branch_name
+        branch = @project_info['files'].find { |h| h['node_type'] == 'branch' && h['name'] == @branch_name }
+
+        unless branch
+          exit_now! <<~HEREDOC
+            path `#{@branch_name}' did not match any branch known to Crowdin
+          HEREDOC
+        end
+
+        branch_files = [] << branch
+
+        remote_project_tree = get_remote_files_hierarchy(branch_files)
+      else
+        remote_project_tree = get_remote_files_hierarchy(@project_info['files'], include_branches: false)
+      end
+
+      if options[:tree]
+        tree = build_hash_tree(remote_project_tree[:files])
+        display_tree(tree)
+      else
+        puts remote_project_tree[:files]
+      end
     end
   end
 
-end
+  ls_cmd.desc I18n.t('app.commands.list.commands.branches.desc')
+  ls_cmd.command :branches do |branches_cmd|
+    branches_cmd.action do |global_options, options, args|
+      branches = get_branches(@project_info['files'])
+      branches.each do |branch|
+        puts "- #{branch}"
+      end
+    end
+  end
 
-pre do |global ,command, options, args|
+
+  ls_cmd.desc I18n.t('app.commands.list.commands.sources.desc')
+  ls_cmd.command :sources do |src_cmd|
+    src_cmd.desc I18n.t('app.commands.list.switches.tree.desc')
+    src_cmd.switch ['tree'], negatable: false
+
+    src_cmd.action do |global_options, options, args|
+      local_files = []
+      dest_files = []
+
+      @config['files'].each do |file|
+        get_invalid_placeholders(file['translation']).each do |placeholder|
+          puts "Warning: #{placeholder} is not valid variable supported by Crowdin. See http://crowdin.com/page/cli-tool#configuration-file for more details."
+        end
+
+        ignores = file['ignore'] || []
+
+        if File.exist?(File.join(@base_path, file['source']))
+          dest = file['source']
+          dest_files << dest
+
+          local_file = { dest: dest, source: File.join(@base_path, file['source']), export_pattern: file['translation'] }
+
+          @allowed_options.each do |option|
+            local_file.merge!({ option.to_sym => file[option] }) if file.has_key?(option)
+          end
+
+          local_files << local_file
+        else
+          Find.find(@base_path) do |source_path|
+            dest = source_path.sub(/\A#{Regexp.escape(@base_path)}/, '') # relative path in Crowdin
+
+            if File.directory?(source_path)
+              if ignores.any? { |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
+                Find.prune # Don't look any further into this directory
+              else
+                next
+              end
+            elsif File.fnmatch?(file['source'], dest, File::FNM_PATHNAME)
+              next if ignores.any? { |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
+
+              dest_files << dest
+
+              export_pattern = construct_export_pattern(dest, file['source'], file['translation'])
+
+              local_file = { dest: dest, source: source_path, export_pattern: export_pattern }
+
+              @allowed_options.each do |option|
+                local_file.merge!({ option.to_sym => file[option] }) if file.has_key?(option)
+              end
+
+              local_files << local_file
+            end
+          end # Find
+
+        end # if File.exist?
+      end # @config['files']
+
+      common_dir = @preserve_hierarchy ? '' : find_common_directory_path(dest_files)
+
+      local_project_tree = get_local_files_hierarchy(local_files.collect { |h| h[:dest].sub(common_dir, '') })
+
+      if options[:tree]
+        tree = build_hash_tree(local_project_tree[:files])
+        display_tree(tree)
+      else
+        puts local_project_tree[:files]
+      end
+    end
+  end # list sources
+
+  ls_cmd.desc I18n.t('app.commands.list.commands.translations.desc')
+  ls_cmd.command :translations do |trans_cmd|
+    trans_cmd.desc I18n.t('app.commands.list.switches.tree.desc')
+    trans_cmd.switch ['tree'], negatable: false
+
+    trans_cmd.action do |global_options, options, args|
+      project_languages = @project_info['languages'].collect { |h| h['code'] }
+
+      supported_languages = @crowdin.supported_languages
+      translation_languages = supported_languages.select { |lang| project_languages.include?(lang['crowdin_code']) }
+
+      translation_files = []
+      @config['files'].each do |file|
+        languages_mapping = file['languages_mapping'] # Hash or NilClass
+
+        ignores = file['ignore'] || []
+
+        if File.exist?(File.join(@base_path, file['source']))
+          dest = file['source'].sub(/\A#{Regexp.escape(@base_path)}/, '')
+
+          translation_languages.each do |lang|
+            local_file  = export_pattern_to_path(dest, file['translation'], lang, languages_mapping)
+            translation_files <<  local_file
+          end
+
+        else
+          Find.find(@base_path) do |source_path|
+            dest = source_path.sub(/\A#{Regexp.escape(@base_path)}/, '') # relative path in Crowdin
+
+            if File.directory?(source_path)
+              if ignores.any? { |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
+                Find.prune # Don't look any further into this directory
+              else
+                next
+              end
+            elsif File.fnmatch?(file['source'], dest, File::FNM_PATHNAME)
+              next if ignores.any? { |pattern| File.fnmatch?(pattern, dest, File::FNM_PATHNAME) }
+
+              export_pattern = construct_export_pattern(dest, file['source'], file['translation'])
+
+              translation_languages.each do |lang|
+                local_file  = export_pattern_to_path(dest, export_pattern, lang, languages_mapping)
+                translation_files << local_file
+              end
+
+            end
+          end # Find
+        end # if
+      end # @config['files']
+
+      if options[:tree]
+        tree = build_hash_tree(translation_files)
+        display_tree(tree)
+      else
+        puts translation_files
+      end
+
+    end
+  end # list translations
+
+  #ls_cmd.default_command :project
+end # list
+
+pre do |globals, command, options, args|
   # Pre logic here
   # Return true to proceed; false to abourt and not call the
   # chosen command
   # Use skips_pre before a command to skip this block
   # on that command only
 
-  @config = YAML.load_file(global[:config])
+  # TODO: check for validity options
+  @allowed_options = [
+    # *.properties files only
+    'escape_quotes',
+    # CSV files only
+    'scheme',
+    'first_line_contains_header',
+    'update_option',
+    # XML files only
+    'translate_content',
+    'translate_attributes',
+    'content_segmentation',
+    'translatable_elements',
+  ]
 
-  #@base_path = @config['base_path'] || Dir.pwd
-  if @config['base_path']
-    if @config['base_path'].start_with?('/')
-      @base_path = @config['base_path']
-    else
-      @base_path = Dir.pwd + '/' + @config['base_path']
-    end
-  else
-    @base_path = Dir.pwd
+  unless File.exist?(globals[:config])
+    exit_now! <<~HEREDOC
+      Can't find configuration file (default `crowdin.yaml').
+      Type `crowdin-cli help` to know how to specify custom configuration file
+
+      See http://crowdin.com/page/cli-tool#configuration-file for more details
+    HEREDOC
   end
 
-  Crowdin::API.log = Logger.new($stderr) if global[:v]
-  @crowdin = Crowdin::API.new(api_key: @config['api_key'], project_id: @config['project_id'], base_url: @config['base_url'] || 'http://api.crowdin.net')
+  # load project-specific configuration
+  #
+  begin
+    # undocumented feature
+    # you can use ERB in your config file, e.g.
+    # api_key: <%= # ruby code ... %>
+    #
+    @config = YAML.load(ERB.new(File.read(globals[:config])).result) || {}
+  rescue Psych::SyntaxError => err
+    exit_now! <<~HEREDOC
+      Could not parse YAML: #{err.message}
 
-  puts "Executing #{command.name}" if global[:v]
+      We were unable to successfully parse the crowdin.yaml file that you provided - most likely it is not well-formatted YAML.
+      Please check whether your crowdin.yaml is valid YAML - you can use the http://yamllint.com/ validator to do this - and make any necessary changes to fix it.
+    HEREDOC
+  end
+
+  # try to load the API credentials from an environment variable, e.g.
+  #
+  # project_identifier_env: 'CROWDIN_PROJECT_ID'
+  # api_key_env: 'CROWDIN_API_KEY'
+  # base_path_env: 'CROWDIN_BASE_PATH'
+  #
+  ['api_key', 'project_identifier', 'base_path'].each do |key|
+    if @config["#{key}_env"]
+      unless @config[key] # project credentials have a higher priority if they are specified in the config
+        @config[key] = ENV[@config["#{key}_env"]]
+      end
+    end
+  end
+
+  # user credentials in the user-specific config file have a higher priority than project-specific
+  #
+  if File.exist?(globals[:identity])
+    identity = YAML.load(ERB.new(File.read(globals[:identity])).result) || {}
+    ['api_key', 'project_identifier', 'base_path'].each do |key|
+      @config[key] = identity[key] if identity[key]
+    end
+  end
+
+  ['api_key', 'project_identifier'].each do |key|
+    unless @config[key]
+      exit_now! <<~HEREDOC
+        Configuration file misses required option `#{key}`
+
+        See http://crowdin.com/page/cli-tool#configuration-file for more details
+      HEREDOC
+    end
+  end
+
+  unless @config['files']
+    exit_now! <<~HEREDOC
+      Configuration file misses required section `files`
+
+      See https://crowdin.com/page/cli-tool#configuration-file for more details
+    HEREDOC
+  end
+
+  @config['files'].each do |file|
+    unless file['source']
+      exit_now! <<~HEREDOC
+        Files section misses required parameter `source`
+
+        See https://crowdin.com/page/cli-tool#configuration-file for more details
+      HEREDOC
+    end
+
+    unless file['translation']
+      exit_now! <<~HEREDOC
+        Files section misses required parameter `translation`
+
+        See https://crowdin.com/page/cli-tool#configuration-file for more details
+      HEREDOC
+    end
+
+    file['source'] = '/' + file['source'] unless file['source'].start_with?('/')
+    #file['translation'] = '/' + file['translation'] unless file['translation'].start_with?('/')
+
+    if file['source'].include?('**')
+      if file['source'].scan('**').size > 1
+        exit_now! <<~HEREDOC
+          Source pattern `#{file['source']}` is not valid. The mask `**` can be used only once in the source pattern.
+        HEREDOC
+      elsif file['source'].scan('**').size == 1 && !file['source'].match(/\/\*\*\//)
+        exit_now! <<~HEREDOC
+          Source pattern `#{file['source']}` is not valid. The mask `**` must be surrounded by slashes `/` in the source pattern.
+        HEREDOC
+      end
+    else
+      if file['translation'].include?('**')
+        exit_now! <<~HEREDOC
+          Translation pattern `#{file['translation']}` is not valid. The mask `**` can't be used.
+          When using `**` in 'translation' pattern it will always contain sub-path from 'source' for certain file.
+        HEREDOC
+      end
+    end
+
+  end #@config['files']
+
+  if @config['base_path']
+    @base_path = @config['base_path']
+  else
+    @base_path = Dir.pwd
+    puts <<~HEREDOC
+      Warning: Configuration file misses parameter `base_path` that defines your project root directory. Using `#{@base_path}` as a root directory.
+    HEREDOC
+  end
+
+  @base_path_contains_branch_subfolders = false
+  if @config['base_path_contains_branch_subfolders']
+    @base_path_contains_branch_subfolders = case @config['base_path_contains_branch_subfolders']
+      when true
+        true
+      when false
+        false
+      else
+        exit_now! <<~HEREDOC
+          Parameter `base_path_contains_branch_subfolders` allows values of true or false.
+        HEREDOC
+    end
+  end
+
+  @branch_name = options[:branch] || nil
+  if @branch_name && @base_path_contains_branch_subfolders
+    @base_path = File.join(@base_path, @branch_name)
+  end
+
+  unless Dir.exist?(@base_path)
+    exit_now! <<~HEREDOC
+      No such directory `#{@base_path}`. Please make sure that the `base_path` is properly set.
+    HEREDOC
+  end
+
+  @preserve_hierarchy = false
+  if @config['preserve_hierarchy']
+    @preserve_hierarchy = case @config['preserve_hierarchy']
+      when true
+        true
+      when false
+        false
+      else
+        exit_now! <<~HEREDOC
+          Parameter `preserve_hierarchy` allows values of true or false.
+        HEREDOC
+    end
+  end
+
+  @jipt_language = nil
+  if @config['jipt_language']
+    @jipt_language = @config['jipt_language']
+  end
+
+  Crowdin::API.log = Logger.new($stderr) if globals[:verbose]
+
+  base_url = @config['base_url'] || 'https://api.crowdin.com'
+  @crowdin = Crowdin::API.new(api_key: @config['api_key'], project_id: @config['project_identifier'], base_url: base_url)
+
+  begin
+    @project_info = @crowdin.project_info
+  rescue Crowdin::API::Errors::Error => err
+    raise err
+  rescue
+    exit_now!("Seems Crowdin server API URL is not valid. Please check the `base_url` parameter in the configuration file.")
+  end
+
+  #puts "Executing #{command.name}" if globals[:verbose]
   true
 end
 
-post do |global, command, options, args|
+post do |globals, command, options, args|
   # Post logic here
   # Use skips_post before a command to skip this
   # block on that command only
-  puts "Executed #{command.name}" if global[:v]
+  # puts "Executed #{command.name}" if globals[:verbose]
 end
 
 on_error do |exception|

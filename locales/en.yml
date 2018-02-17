@@ -1,0 +1,88 @@
+en:
+  app:
+    desc: is a command line tool that allows you to manage and synchronize your localization resources with Crowdin project
+    long_desc: |
+      This tool requires configuration file to be created.
+      See http://crowdin.com/page/cli-tool#configuration-file for more details.
+    flags:
+      config:
+        desc: Project-specific configuration file
+      identity:
+        desc: User-specific configuration file with API credentials
+      branch:
+        desc: Defines branch name.
+    switches:
+      verbose:
+        desc: Be verbose
+    commands:
+      upload:
+        desc: Allows you to upload source files and existing translations to Crowdin project.
+        long_desc: |
+          This command is used to upload source files and translations to Crowdin.
+          This command is used in combination with sub-commands `sources` and `translations`
+        commands:
+          sources:
+            desc: safely upload source files to Crowdin
+            long_desc: |
+              Upload source files to Crowdin project.
+              If there are new localization files locally they will be added to Crowdin project.
+              Otherwise files will be updated (if no --no-auto-update option specified).
+            switches:
+              auto_update:
+                desc: |
+                  Defines whether to update source files in Crowdin project.
+                  --no-auto-update is useful when you just want to upload new files without updating existing ones.
+          translations:
+            desc: upload existing translations to Crowdin project
+            long_desc: |
+              Upload existing translations to Crowdin.
+              See below available options that can be used in combination with this command.
+              If no options specified uploaded translations will be not approved,
+              imported to Crowdin project even if they are duplicated and imported even they are equal to souce string.
+              (In many localization formats they can be considered as not actually translations).
+            flags:
+              language:
+                desc: |
+                  Defines what language upload translations to.
+                  By default translations will be uploaded for all Crowdin project target languages
+            switches:
+              import_duplicates:
+                desc: Defines whether to add translation if there is the same translation already existing in Crowdin project
+              import_eq_suggestions:
+                desc: Defines whether to add translation if it is equal to source string in Crowdin project
+              auto_approve_imported:
+                desc: Automatically approve uploaded translations
+      download:
+        desc: Download latest translations from Crowdin and put them to the right places in your project
+        long_desc: |
+          Download latest translations from Crowdin and put them to the right places in your project
+        flags:
+          language:
+            desc: |
+              If the option is defined the translations will be downloaded for single specified language.
+              Otherwise (by default) translations are downloaded for all languages
+        switches:
+          ignore_match:
+            desc: |
+              Exit with a zero even if no files matched
+          include_unchanged:
+            desc: |
+              Download all translation files whether or not they have changes
+      list:
+        desc: Show a list of files (the current project)
+        long_desc: |
+          List information about the files. List only those files that match the wild-card pattern
+        commands:
+          project:
+            desc: List information about the files that already exists in current project
+          branches:
+            desc: List remote-tracking branches
+          sources:
+            desc: List information about the sources files in current project that match the wild-card pattern
+          translations:
+            desc: List information about the translations files in current project that match the wild-card pattern
+        switches:
+          tree:
+            desc: list contents of directories in a tree-like format
+          include_branches:
+            desc: include branches
