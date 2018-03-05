@@ -481,12 +481,11 @@ command :upload do |c|
         update_files = local_project_tree[:files] & remote_project_tree[:files]
         files_for_upload = local_files.select { |file| update_files.include?(file[:dest]) }
 
-        THREAD_COUNT = 12  # tweak this number for maximum performance.
-
+        thread_count = 12  # tweak this number for maximum performance.
         resps = []
         mutex = Mutex.new
 
-        THREAD_COUNT.times.map {
+        thread_count.times.map {
           Thread.new(files_for_upload, resps) do |files_for_upload, resps|
             while file = mutex.synchronize { files_for_upload.pop }
               file[:dest].slice!(0) if file[:dest].start_with?('/')
@@ -498,15 +497,13 @@ command :upload do |c|
                 params[option.to_sym] = file.delete(option.to_sym)
               end
 
-              print "Updating source file `#{file[:dest]}'"
-
               resp = @crowdin.update_file([] << file, params)
 
               case resp['files'].first[1]
               when 'skipped'
-                puts "\rUpdating source file `#{file[:dest]}' - Skipped"
+                puts "Updating source file `#{file[:dest]}' - Skipped"
               when 'updated'
-                puts "\rUpdating source file `#{file[:dest]}' - OK"
+                puts "Updating source file `#{file[:dest]}' - OK"
               end
               mutex.synchronize { resps << resp }
             end
@@ -518,27 +515,35 @@ command :upload do |c|
       #
       add_files = local_project_tree[:files] - remote_project_tree[:files]
       files_for_add = local_files.select { |file| add_files.include?(file[:dest]) }
-      files_for_add.each do |file|
-        # If file path starts with / Crowdin returns error
-        # 17: Specified directory was not found
-        # make sure that file[:dest] not start with '/'
-        file[:dest].slice!(0) if file[:dest].start_with?('/')
 
-        params = {}
-        params[:type] = file.delete(:type) if file[:type]
-        params[:branch] = @branch_name if @branch_name
+      thread_count = 12
+      resps = []
+      mutex = Mutex.new
 
-        @allowed_options.each do |option|
-          params[option.to_sym] = file.delete(option.to_sym)
+      thread_count.times.map {
+        Thread.new(files_for_add, resps) do |files_for_add, resps|
+          while file = mutex.synchronize { files_for_add.pop }
+            # If file path starts with / Crowdin returns error
+            # 17: Specified directory was not found
+            # make sure that file[:dest] not start with '/'
+            file[:dest].slice!(0) if file[:dest].start_with?('/')
+
+            params = {}
+            params[:type] = file.delete(:type) if file[:type]
+            params[:branch] = @branch_name if @branch_name
+
+            @allowed_options.each do |option|
+              params[option.to_sym] = file.delete(option.to_sym)
+            end
+
+            resp = @crowdin.add_file([] << file, params)
+
+            puts "Uploading source file `#{file[:dest]}' - OK"
+
+            mutex.synchronize { resps << resp }
+          end
         end
-
-        print "Uploading source file `#{file[:dest]}'"
-
-        @crowdin.add_file([] << file, params)
-
-        puts "\rUploading source file `#{file[:dest]}' - OK"
-      end
-
+      }.each(&:join)
     end # action
   end # upload sources
 
@@ -610,7 +615,7 @@ command :upload do |c|
 
       translation_languages = supported_languages.select { |lang| project_languages.include?(lang['crowdin_code']) }
 
-      translated_files = Hash.new{ |hash, key| hash[key] = Array.new }
+      translated_files = []
       dest_files = []
 
       @config['files'].each do |file|
@@ -638,7 +643,7 @@ command :upload do |c|
 
           file_translation_languages.each do |lang|
             source = export_pattern_to_path(dest, file['translation'], lang, languages_mapping)
-            translated_files[lang['crowdin_code']] << { source: File.join(@base_path, source), dest: dest }
+            translated_files << { crowdin_code: lang['crowdin_code'], source: File.join(@base_path, source), dest: dest }
           end
         else
           Find.find(@base_path) do |source_path|
@@ -659,12 +664,10 @@ command :upload do |c|
 
               file_translation_languages.each do |lang|
                 source = export_pattern_to_path(dest, export_pattern, lang, languages_mapping)
-                translated_files[lang['crowdin_code']] << { source: File.join(@base_path, source), dest: dest }
+                translated_files << { crowdin_code: lang['crowdin_code'], source: File.join(@base_path, source), dest: dest }
               end
-
             end
           end # Find
-
         end # if
       end # @config['files']
 
@@ -678,40 +681,45 @@ command :upload do |c|
 
       common_dir = @preserve_hierarchy ? '' : find_common_directory_path(dest_files)
 
-      translated_files.each_pair do |language, files|
-        files.each do |file|
-          file[:dest] = file[:dest].sub(common_dir, '')
-          source_file = file[:source].sub(/\A#{Regexp.escape(@base_path)}/, '')
+      thread_count = 12
+      resps = []
+      mutex = Mutex.new
 
-          if remote_project_tree[:files].include?(file[:dest])
-            if File.exist?(file[:source])
-              # If file path starts with / Crowdin returns error
-              # 17: Specified directory was not found
-              # make sure that file[:dest] not start with '/'
-              file[:dest].slice!(0) if file[:dest].start_with?('/')
+      thread_count.times.map {
+        Thread.new(translated_files, resps) do |translated_files, resps|
+          while file = mutex.synchronize { translated_files.pop }
+            file[:dest] = file[:dest].sub(common_dir, '')
+            source_file = file[:source].sub(/\A#{Regexp.escape(@base_path)}/, '')
+            language = file.delete(:crowdin_code)
 
-              print "Uploading translation file `#{source_file}'"
+            if remote_project_tree[:files].include?(file[:dest])
+              if File.exist?(file[:source])
+                # If file path starts with / Crowdin returns error
+                # 17: Specified directory was not found
+                # make sure that file[:dest] not start with '/'
+                file[:dest].slice!(0) if file[:dest].start_with?('/')
 
-              resp = @crowdin.upload_translation([] << file, language, params)
+                resp = @crowdin.upload_translation([] << file, language, params)
 
-              case resp['files'].first[1]
-              when 'skipped'
-                puts "\rUploading translation file `#{source_file}' - Skipped"
-              when 'uploaded'
-                puts "\rUploading translation file `#{source_file}' - OK"
-              when 'not_allowed'
-                puts "\rUploading translation file `#{source_file}' - is not possible"
+                case resp['files'].first[1]
+                when 'skipped'
+                  puts "Uploading translation file `#{source_file}' - Skipped"
+                when 'uploaded'
+                  puts "Uploading translation file `#{source_file}' - OK"
+                when 'not_allowed'
+                  puts "Uploading translation file `#{source_file}' - is not possible"
+                end
+              else
+                puts "Warning: Local file `#{file[:source]}' does not exist"
               end
             else
-              puts "Warning: Local file `#{file[:source]}' does not exist"
+              # if source file does not exist, don't upload translations
+              puts "Warning: Skip `#{source_file}'. Translation can not be uploaded for a non-existent source file `#{file[:dest]}'. Please upload sources first."
             end
-          else
-            # if source file does not exist, don't upload translations
-            puts "Warning: Skip `#{source_file}'. Translation can not be uploaded for a non-existent source file `#{file[:dest]}'. Please upload sources first."
+            mutex.synchronize { resps << resp }
           end
         end
-      end
-
+      }.each(&:join)
     end # action
   end # upload translations
 
@@ -859,7 +867,6 @@ command :download do |c|
       tempfile.close
       tempfile.unlink # delete the tempfile
     end
-
   end # action
 end # download
 
